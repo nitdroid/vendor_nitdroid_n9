@@ -1,0 +1,4 @@
+#!/system/bin/sh
+#dbus-send --system --print-reply --dest=org.ofono /isimodem/primarycontext1 org.ofono.PrimaryDataContext.SetProperty string:"Active" variant:boolean:false
+#kill `pidof ofonod`
+kill `pidof rild`

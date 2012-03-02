@@ -1,0 +1,8 @@
+#
+# system.prop for n9
+#
+
+ro.sf.lcd_density=220
+ro.sf.hwrotation=270
+qemu.hw.mainkeys=0
+wifi.interface=wlan0
