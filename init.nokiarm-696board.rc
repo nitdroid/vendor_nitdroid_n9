@@ -1,15 +1,27 @@
 on early-init
     #exec /bin/sh /system/etc/mb_logic.sh
 
+    # DSP
     insmod /system/lib/modules/current/mailbox.ko
-    insmod /system/lib/modules/current/bridgedriver.ko shm_size=0x400000 phys_mempool_base=0 base_img=/system/lib/dsp/baseimage.dof
+    insmod /system/lib/modules/current/mailbox_mach.ko
+    insmod /system/lib/modules/current/bridgedriver.ko shm_size=0x500000 base_img=/system/lib/dsp/baseimage.dof
     insmod /system/lib/modules/current/dspbridge.ko
 
-    #insmod /system/lib/modules/current/cmt_speech.ko
+    # CMT
+    insmod /system/lib/modules/current/nfnetlink.ko
+    insmod /system/lib/modules/current/nfnetlink_log.ko
+    insmod /system/lib/modules/current/hsi_char.ko
+    insmod /system/lib/modules/current/omap_ssi.ko
+    insmod /system/lib/modules/current/cmt.ko
+    insmod /system/lib/modules/current/phonet.ko phonet_gid=0
+    insmod /system/lib/modules/current/ssi_protocol.ko
+    insmod /system/lib/modules/current/cmt_speech.ko
 
+    # Accelerometer
     #insmod /system/lib/modules/current/lis3lv02d.ko
     #insmod /system/lib/modules/current/lis3lv02d_i2c.ko
 
+    # HW keys
     insmod /system/lib/modules/current/keychord.ko
     insmod /system/lib/modules/current/twl4030-pwrbutton.ko
     insmod /system/lib/modules/current/twl4030_keypad.ko
