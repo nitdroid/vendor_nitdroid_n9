@@ -21,8 +21,13 @@ loglevel 3
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/core-junit.jar:/system/framework/bouncycastle.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar:/system/framework/apache-xml.jar:/system/framework/filterfw.jar
 
 # Backward compatibility
-    #symlink system/etc /etc
-    #symlink system/lib /lib
+    symlink system/etc /etc
+    symlink system/lib /lib
+
+# Create cgroup mount point for cpu accounting
+    mkdir /acct
+    mount cgroup none /acct cpuacct
+    mkdir /acct/uid
 
 # create mountpoints and mount tmpfs on sqlite_stmt_journals
     mkdir /mnt 0775 root system
@@ -317,7 +322,6 @@ service ofono /system/bin/logwrapper /system/bin/ofonod -n
     class main
     #setenv OFONO_ISI_DEBUG all
     group radio
-    oneshot
 
 service oril /system/bin/logwrapper /system/bin/rild -l /system/lib/libofono-ril.so
     class main
