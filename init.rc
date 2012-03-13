@@ -22,7 +22,7 @@ loglevel 3
 
 # Backward compatibility
     symlink system/etc /etc
-    symlink system/lib /lib
+    #symlink system/lib /lib
 
 # Create cgroup mount point for cpu accounting
     mkdir /acct

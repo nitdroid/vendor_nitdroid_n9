@@ -1,5 +1,4 @@
 on early-init
-    #exec /bin/sh /system/etc/mb_logic.sh
 
     # DSP
     insmod /system/lib/modules/current/mailbox.ko
@@ -16,6 +15,10 @@ on early-init
     insmod /system/lib/modules/current/phonet.ko phonet_gid=0
     insmod /system/lib/modules/current/ssi_protocol.ko
     insmod /system/lib/modules/current/cmt_speech.ko
+
+    insmod /system/lib/modules/current/hci_h4p.ko
+    insmod /system/lib/modules/current/hidp.ko
+    insmod /system/lib/modules/current/bnep.ko
 
     # Accelerometer
     #insmod /system/lib/modules/current/lis3lv02d.ko
@@ -121,7 +124,11 @@ service nokia-setup /system/bin/logwrapper /system/etc/init.nokia.sh
     oneshot
     disabled
 
-service swap-setup /system/bin/logwrapper /bin/sh /system/etc/switchswap.sh
+service dsme /system/bin/fakedsme
+    class main
+    disabled
+
+service harmount /system/bin/logwrapper /system/etc/harmount.sh
     class main
     oneshot
 
