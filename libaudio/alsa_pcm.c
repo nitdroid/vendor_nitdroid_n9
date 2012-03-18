@@ -14,7 +14,7 @@
 ** limitations under the License.
 */
 
-#define LOG_TAG "alsa_pcm"
+#define LOG_TAG "AudioHardware_alsa_pcm"
 //#define LOG_NDEBUG 0
 #include <cutils/log.h>
 #include <cutils/config_utils.h>
@@ -307,9 +307,9 @@ int pcm_close(struct pcm *pcm)
     return 0;
 }
 
-struct pcm *pcm_open(unsigned flags)
+struct pcm *pcm_open(unsigned flags, int deviceNum)
 {
-    const char *dname;
+    char dname[100];
     struct pcm *pcm;
     struct snd_pcm_info info;
     struct snd_pcm_hw_params params;
@@ -317,19 +317,15 @@ struct pcm *pcm_open(unsigned flags)
     unsigned period_sz;
     unsigned period_cnt;
 
-    LOGV("pcm_open(0x%08x)",flags);
+    LOGD("pcm_open(0x%08x)",flags);
 
     pcm = calloc(1, sizeof(struct pcm));
     if (!pcm)
         return &bad_pcm;
 
-    if (flags & PCM_IN) {
-        dname = "/dev/snd/pcmC0D0c";
-    } else {
-        dname = "/dev/snd/pcmC0D0p";
-    }
+    snprintf(dname, sizeof(dname), "/dev/snd/pcmC%dD0%c", deviceNum, flags & PCM_IN ? 'c' : 'p');
 
-    LOGV("pcm_open() period sz multiplier %d",
+    LOGD("pcm_open(%s) period sz multiplier %d", dname,
          ((flags & PCM_PERIOD_SZ_MASK) >> PCM_PERIOD_SZ_SHIFT) + 1);
     period_sz = 128/2 * (((flags & PCM_PERIOD_SZ_MASK) >> PCM_PERIOD_SZ_SHIFT) + 1);
     LOGV("pcm_open() period cnt %d",

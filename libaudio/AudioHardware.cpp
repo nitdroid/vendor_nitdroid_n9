@@ -93,13 +93,13 @@ static struct mixer_ctl *get_ctl(struct mixer *mixer, const char *name)
     return mixer_get_control(mixer, name, idx);
 }
 
-static void setMixerCtl(const char *name, const char *value)
+static void setMixerCtl(int mixerDev, const char *name, const char *value)
 {
     struct mixer *mixer;
     struct mixer_ctl *ctl;
     int r;
 
-    mixer = mixer_open(NULL);
+    mixer = mixer_open(mixerDev);
     if (!mixer) {
         LOGE("open_mixer failed: %s", strerror(errno));
         return;
@@ -116,24 +116,28 @@ static void setMixerCtl(const char *name, const char *value)
     else
         r = mixer_ctl_select(ctl, value);
     if (r)
-        LOGE("setMixerCtl(%s, %s): %s\n", name, value, strerror(errno));
+        LOGE("setMixerCtl(%d, %s, %s): %s\n", mixerDev, name, value, strerror(errno));
 
     mixer_close(mixer);
 }
 
-static void setAudioRouting(int device)
+void AudioHardware::setAudioRouting(int device)
 {
     switch(device) {
         case AudioSystem::DEVICE_OUT_WIRED_HEADSET:
             LOGD("Routing: HEADSET");
-            setMixerCtl("Analog Left Headset Mic Capture Switch", "1");
-            setMixerCtl("TX1 Digital Capture Volume", "21");
+            setMixerCtl(0, "Analog Left Headset Mic Capture Switch", "1");
+            setMixerCtl(0, "TX1 Digital Capture Volume", "21");
         case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE:
             LOGD("Routing: HEADPHONE");
-            setMixerCtl("DAC2 Analog Playback Volume", "0");
-            setMixerCtl("DAC2 Analog Playback Switch", "0");
-            setMixerCtl("PreDriv Playback Volume", "0");
-            setMixerCtl("PredriveR Mixer AudioL2", "0");
+            setMixerCtl(0, "DAC2 Analog Playback Volume", "0");
+            setMixerCtl(0, "DAC2 Analog Playback Switch", "0");
+            setMixerCtl(0, "PreDriv Playback Volume", "0");
+            setMixerCtl(0, "PredriveR Mixer AudioL2", "0");
+            setMixerCtl(1, "Line to Line Out Volume", "0");
+            setMixerCtl(1, "DAC Digital Playback Switch", "1");
+            setMixerCtl(1, "TPA6140A2 Headphone Playback Volume", "35");
+            type = SOUND_TYPE_HEADSET;
             break;
 
         case AudioSystem::DEVICE_OUT_EARPIECE:
@@ -143,16 +147,22 @@ static void setAudioRouting(int device)
         case AudioSystem::DEVICE_OUT_SPEAKER:
         case AudioSystem::DEVICE_OUT_SPEAKER | AudioSystem::DEVICE_OUT_WIRED_HEADSET:
             LOGD("Routing: SPEAKERS");
-            setMixerCtl("DAC1 Analog Playback Switch", "0");
-            setMixerCtl("DAC1 Analog Playback Volume", "0");
-            setMixerCtl("DAC2 Analog Playback Volume", "100");
-            setMixerCtl("TX1 Digital Capture Volume", "0");
-            setMixerCtl("PreDriv Playback Volume", "67");
-            setMixerCtl("DAC1 Digital Fine Playback Volume", "100");
-            setMixerCtl("PredriveR Mixer AudioL2", "1");
+            setMixerCtl(0, "DAC1 Analog Playback Switch", "0");
+            setMixerCtl(0, "DAC1 Analog Playback Volume", "0");
+            setMixerCtl(0, "DAC2 Analog Playback Volume", "100");
+            setMixerCtl(0, "DAC2 Analog Playback Switch", "1");
+            setMixerCtl(0, "TX1 Digital Capture Volume", "0");
+            setMixerCtl(0, "PreDriv Playback Volume", "67");
+            setMixerCtl(0, "DAC1 Digital Fine Playback Volume", "100");
+            setMixerCtl(0, "PredriveR Mixer AudioL2", "1");
+            setMixerCtl(1, "Line to Line Out Volume", "100");
+            setMixerCtl(1, "DAC Digital Playback Switch", "0");
+            setMixerCtl(1, "TPA6140A2 Headphone Playback Volume", "0");
+            type = SOUND_TYPE_SPEAKER;
             break;
 
         default:
+            type = SOUND_TYPE_SPEAKER;
             LOGE("Don't know anything about routing #%d", device);
     }
 }
@@ -239,6 +249,7 @@ AudioStreamOut* AudioHardware::openOutputStream(
             if (status) {
                 *status = INVALID_OPERATION;
             }
+            LOGD("only one output stream allowed");
             return NULL;
         }
 
@@ -590,7 +601,6 @@ void AudioHardware::setVoiceVolume_l(float volume)
             device = mOutput->device();
         }
         int int_volume = (int)(volume * 5);
-        //SoundType type;
 
         LOGD("### route(%d) call volume(%f)", device, volume);
         switch (device) {
@@ -786,7 +796,7 @@ struct pcm *AudioHardware::openPcmOut_l()
         flags |= (AUDIO_HW_OUT_PERIOD_CNT - PCM_PERIOD_CNT_MIN) << PCM_PERIOD_CNT_SHIFT;
 
         TRACE_DRIVER_IN(DRV_PCM_OPEN)
-        mPcm = pcm_open(flags);
+        mPcm = pcm_open(flags, type == SOUND_TYPE_HEADSET ? 1 : 0);
         TRACE_DRIVER_OUT
         if (!pcm_ready(mPcm)) {
             LOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_error(mPcm));
@@ -1284,7 +1294,8 @@ status_t AudioHardware::AudioStreamOutALSA::setParameters(const String8& keyValu
                     //if (mHardware->mode() != AudioSystem::MODE_IN_CALL)
                     {
                         doStandby_l();
-                        setAudioRouting(device);
+                        mHardware->setAudioRouting(device);
+                        close_l();
                     }
                 }
                 if (mHardware->mode() == AudioSystem::MODE_IN_CALL) {
@@ -1577,7 +1588,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
 
     LOGV("open pcm_in driver");
     TRACE_DRIVER_IN(DRV_PCM_OPEN)
-    mPcm = pcm_open(flags);
+    mPcm = pcm_open(flags, 0);//mtype == SOUND_TYPE_HEADSET ? 1 : 0);
     TRACE_DRIVER_OUT
     if (!pcm_ready(mPcm)) {
         LOGE("cannot open pcm_in driver: %s\n", pcm_error(mPcm));

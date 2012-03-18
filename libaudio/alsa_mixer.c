@@ -97,7 +97,7 @@ void mixer_close(struct mixer *mixer)
     free(mixer);
 }
 
-struct mixer *mixer_open(void)
+struct mixer *mixer_open(int mixerDev)
 {
     struct snd_ctl_elem_list elist;
     struct snd_ctl_elem_info tmp;
@@ -106,7 +106,9 @@ struct mixer *mixer_open(void)
     unsigned n, m;
     int fd;
 
-    fd = open("/dev/snd/controlC0", O_RDWR);
+    char dname[64];
+    snprintf(dname, sizeof(dname), "/dev/snd/controlC%d", mixerDev);
+    fd = open(dname, O_RDWR);
     if (fd < 0)
         return 0;
 
@@ -219,6 +221,8 @@ void mixer_dump(struct mixer *mixer)
             break;
         }
         }
+
+        mixer_ctl_print(&mixer->ctl[n]);
         printf("\n");
     }
 }
@@ -246,14 +250,15 @@ struct mixer_ctl *mixer_get_nth_control(struct mixer *mixer, unsigned n)
 
 void mixer_ctl_print(struct mixer_ctl *ctl)
 {
-    struct snd_ctl_elem_value ev;
+     struct snd_ctl_elem_value ev;
     unsigned n;
 
     memset(&ev, 0, sizeof(ev));
     ev.id.numid = ctl->info->id.numid;
     if (ioctl(ctl->mixer->fd, SNDRV_CTL_IOCTL_ELEM_READ, &ev))
         return;
-    printf("%s:", ctl->info->id.name);
+    //printf("%s:", ctl->info->id.name);
+    printf("| ");
 
     switch (ctl->info->type) {
     case SNDRV_CTL_ELEM_TYPE_BOOLEAN:
@@ -279,7 +284,7 @@ void mixer_ctl_print(struct mixer_ctl *ctl)
     default:
         printf(" ???");
     }
-    printf("\n");
+    //printf("\n");
 }
 
 static long scale_int(struct snd_ctl_elem_info *ei, unsigned _percent)
@@ -348,6 +353,9 @@ int mixer_ctl_select(struct mixer_ctl *ctl, const char *value)
 {
     unsigned n, max;
     struct snd_ctl_elem_value ev;
+
+    if (*value == '@')
+      ++value;
 
     if (ctl->info->type != SNDRV_CTL_ELEM_TYPE_ENUMERATED) {
         errno = EINVAL;

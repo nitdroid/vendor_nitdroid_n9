@@ -53,7 +53,7 @@ int record_file(unsigned rate, unsigned channels, int fd, unsigned count)
     char *data, *next;
     int r;
 
-    pcm = pcm_open(PCM_IN|PCM_MONO);
+    pcm = pcm_open(PCM_IN|PCM_MONO, 0);
     if (!pcm_ready(pcm)) {
         pcm_close(pcm);
         goto fail;

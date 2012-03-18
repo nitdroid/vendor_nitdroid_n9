@@ -40,7 +40,7 @@ struct pcm;
 /* Acquire/release a pcm channel.
  * Returns non-zero on error
  */
-struct pcm *pcm_open(unsigned flags);
+struct pcm *pcm_open(unsigned flags, int deviceNum);
 int pcm_close(struct pcm *pcm);
 int pcm_ready(struct pcm *pcm);
 
@@ -62,7 +62,7 @@ int pcm_read(struct pcm *pcm, void *data, unsigned count);
 struct mixer;
 struct mixer_ctl;
 
-struct mixer *mixer_open(const char *mixerDev);
+struct mixer *mixer_open(int mixerDev);
 void mixer_close(struct mixer *mixer);
 void mixer_dump(struct mixer *mixer);
 

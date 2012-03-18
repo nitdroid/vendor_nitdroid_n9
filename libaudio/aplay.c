@@ -60,13 +60,13 @@ int play_file(unsigned rate, unsigned channels, int fd, unsigned count)
     else
         flags |= PCM_STEREO;
 
-    pcm = pcm_open(flags);
+    pcm = pcm_open(flags, 0);
     if (!pcm_ready(pcm)) {
         pcm_close(pcm);
         return -1;
     }
 
-    mixer = mixer_open(NULL);
+    mixer = mixer_open(0);
     if (mixer)
         ctl = mixer_get_control(mixer,"Playback Path", 0);
     

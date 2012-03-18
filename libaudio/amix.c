@@ -47,9 +47,9 @@ int main(int argc, char **argv)
     int r;
 
     // first argument: mixer device path
-    const char *mixerDev = 0;
+    int mixerDev = 0;
     if (argc > 1) {
-        mixerDev = argv[1];
+        mixerDev = atoi(argv[1]);
         --argc;
         ++argv;
     }

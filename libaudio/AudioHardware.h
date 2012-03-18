@@ -67,6 +67,13 @@ namespace android_audio_legacy {
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
 
+enum SoundType {
+    SOUND_TYPE_SPEAKER = 0,
+    SOUND_TYPE_HEADSET,
+    SOUND_TYPE_VOICE,
+    SOUND_TYPE_BTVOICE,
+};
+
 using namespace android;
 
 class AudioHardware : public AudioHardwareBase
@@ -84,6 +91,8 @@ public:
     AudioHardware();
     virtual ~AudioHardware();
     virtual status_t initCheck();
+
+    void setAudioRouting(int device);
 
     virtual status_t setVoiceVolume(float volume);
     virtual status_t setMasterVolume(float volume);
@@ -162,6 +171,7 @@ private:
     audio_source    mInputSource;
     bool            mBluetoothNrec;
     int             mTTYMode;
+    SoundType       type;
 
 #if 0
     void*           mSecRilLibHandle;
