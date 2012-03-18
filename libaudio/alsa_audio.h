@@ -62,7 +62,7 @@ int pcm_read(struct pcm *pcm, void *data, unsigned count);
 struct mixer;
 struct mixer_ctl;
 
-struct mixer *mixer_open(void);
+struct mixer *mixer_open(const char *mixerDev);
 void mixer_close(struct mixer *mixer);
 void mixer_dump(struct mixer *mixer);
 

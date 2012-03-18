@@ -46,7 +46,15 @@ int main(int argc, char **argv)
     struct mixer_ctl *ctl;
     int r;
 
-    mixer = mixer_open();
+    // first argument: mixer device path
+    const char *mixerDev = 0;
+    if (argc > 1) {
+        mixerDev = argv[1];
+        --argc;
+        ++argv;
+    }
+
+    mixer = mixer_open(mixerDev);
     if (!mixer)
         return -1;
 

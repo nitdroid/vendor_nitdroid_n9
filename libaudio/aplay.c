@@ -66,7 +66,7 @@ int play_file(unsigned rate, unsigned channels, int fd, unsigned count)
         return -1;
     }
 
-    mixer = mixer_open();
+    mixer = mixer_open(NULL);
     if (mixer)
         ctl = mixer_get_control(mixer,"Playback Path", 0);
     
