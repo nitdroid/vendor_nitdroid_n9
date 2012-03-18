@@ -1,4 +1,7 @@
 /*
+** Copyright 2011-2012 The NITDroid Open-Source Project
+** Maintainer: Alexey Roslyakov <alexey.roslyakov@newsycat.com>
+**
 ** Copyright 2010, The Android Open-Source Project
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,7 +99,7 @@ static void setMixerCtl(const char *name, const char *value)
     struct mixer_ctl *ctl;
     int r;
 
-    mixer = mixer_open();
+    mixer = mixer_open(NULL);
     if (!mixer) {
         LOGE("open_mixer failed: %s", strerror(errno));
         return;
@@ -122,48 +125,31 @@ static void setAudioRouting(int device)
 {
     switch(device) {
         case AudioSystem::DEVICE_OUT_WIRED_HEADSET:
-        case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE:
             LOGD("Routing: HEADSET");
-            setMixerCtl("PCM Playback Volume", "127");
-            setMixerCtl("Headphone Playback Volume", "127");
-            setMixerCtl("HP DAC Playback Volume", "0");
-            setMixerCtl("Line DAC Playback Volume", "127");
-            setMixerCtl("ADC HPF Cut-off", "Disabled");
-            setMixerCtl("Speaker Function", "Off");
-            setMixerCtl("Jack Function", "Headset");
-            setMixerCtl("Earphone Function", "Off");
+            setMixerCtl("Analog Left Headset Mic Capture Switch", "1");
+            setMixerCtl("TX1 Digital Capture Volume", "21");
+        case AudioSystem::DEVICE_OUT_WIRED_HEADPHONE:
+            LOGD("Routing: HEADPHONE");
+            setMixerCtl("DAC2 Analog Playback Volume", "0");
+            setMixerCtl("DAC2 Analog Playback Switch", "0");
+            setMixerCtl("PreDriv Playback Volume", "0");
+            setMixerCtl("PredriveR Mixer AudioL2", "0");
             break;
 
         case AudioSystem::DEVICE_OUT_EARPIECE:
             LOGD("Routing: EARPIECE");
-            setMixerCtl("Headphone Playback Volume", "0");
-            setMixerCtl("Line DAC Playback Volume", "0");
-            setMixerCtl("Mono DAC Playback Volume", "118");
-            setMixerCtl("HP DAC Playback Volume", "0");
-            setMixerCtl("HP Line2 Bypass Playback Volume", "0");
-            setMixerCtl("HPCOM PGA Bypass Playback Volume", "0");
-            setMixerCtl("HP DAC Playback Volume", "71");
-            setMixerCtl("HP DAC Output Volume", "");
-            setMixerCtl("Input Select", "Digital Mic");
-            setMixerCtl("Earphone Playback Volume", "118");
-            //setMixerCtl("ADC HPF Cut-off", "0.0045xFs");
-            setMixerCtl("Speaker Function", "Off");
-            setMixerCtl("Jack Function", "Off");
-            setMixerCtl("Earphone Function", "On");
             break;
 
         case AudioSystem::DEVICE_OUT_SPEAKER:
         case AudioSystem::DEVICE_OUT_SPEAKER | AudioSystem::DEVICE_OUT_WIRED_HEADSET:
             LOGD("Routing: SPEAKERS");
-            //setMixerCtl("PCM Playback Volume", "118");
-            setMixerCtl("DAC1 Digital Fine Playback Volume", "63");
-            setMixerCtl("HP DAC Output Volume", "6");
-            setMixerCtl("Line DAC Playback Volume", "127");
-            setMixerCtl("Headphone Playback Volume", "0");
-            //setMixerCtl("ADC HPF Cut-off", "0.0045xFs");
-            setMixerCtl("Speaker Function", "On");
-            setMixerCtl("Jack Function", "Off");
-            setMixerCtl("Earphone Function", "Off");
+            setMixerCtl("DAC1 Analog Playback Switch", "0");
+            setMixerCtl("DAC1 Analog Playback Volume", "0");
+            setMixerCtl("DAC2 Analog Playback Volume", "100");
+            setMixerCtl("TX1 Digital Capture Volume", "0");
+            setMixerCtl("PreDriv Playback Volume", "67");
+            setMixerCtl("DAC1 Digital Fine Playback Volume", "100");
+            setMixerCtl("PredriveR Mixer AudioL2", "1");
             break;
 
         default:
@@ -840,7 +826,7 @@ struct mixer *AudioHardware::openMixer_l()
             return NULL;
         }
         TRACE_DRIVER_IN(DRV_MIXER_OPEN)
-        mMixer = mixer_open();
+        mMixer = mixer_open(NULL);
         TRACE_DRIVER_OUT
         if (mMixer == NULL) {
             LOGE("openMixer_l() cannot open mixer");
