@@ -22,8 +22,9 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES:= amix.c alsa_mixer.c
 LOCAL_MODULE:= amix
-LOCAL_SHARED_LIBRARIES := libc libcutils
+LOCAL_STATIC_LIBRARIES := libc libcutils
 LOCAL_MODULE_TAGS:= debug
+LOCAL_FORCE_STATIC_EXECUTABLE := true
 include $(BUILD_EXECUTABLE)
 
 #
