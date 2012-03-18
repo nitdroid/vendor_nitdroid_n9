@@ -15,14 +15,16 @@ on early-init
     insmod /system/lib/modules/current/phonet.ko phonet_gid=0
     insmod /system/lib/modules/current/ssi_protocol.ko
     insmod /system/lib/modules/current/cmt_speech.ko
+    insmod /system/lib/modules/current/pn_pep.ko
 
     insmod /system/lib/modules/current/hci_h4p.ko
     insmod /system/lib/modules/current/hidp.ko
     insmod /system/lib/modules/current/bnep.ko
 
     # Accelerometer
-    #insmod /system/lib/modules/current/lis3lv02d.ko
-    #insmod /system/lib/modules/current/lis3lv02d_i2c.ko
+    insmod /system/lib/modules/current/lis3lv02d.ko
+    insmod /system/lib/modules/current/lis3lv02d_i2c.ko
+    insmod /system/lib/modules/current/twl5031-aci.ko
 
     # HW keys
     insmod /system/lib/modules/current/keychord.ko
@@ -41,30 +43,14 @@ on boot
 # disable proximity sensor, we don't have HAL for it currently
     write /sys/devices/platform/gpio-switch/proximity/disable 1
 
-# keyboard leds
-    chown system system /sys/class/leds/lp5523\:kb1/brightness
-    chown system system /sys/class/leds/lp5523\:kb2/brightness
-    chown system system /sys/class/leds/lp5523\:kb3/brightness
-    chown system system /sys/class/leds/lp5523\:kb4/brightness
-    chown system system /sys/class/leds/lp5523\:kb5/brightness
-    chown system system /sys/class/leds/lp5523\:kb6/brightness
-
-    chmod 664 /sys/class/leds/lp5523\:kb1/brightness
-    chmod 664 /sys/class/leds/lp5523\:kb2/brightness
-    chmod 664 /sys/class/leds/lp5523\:kb3/brightness
-    chmod 664 /sys/class/leds/lp5523\:kb4/brightness
-    chmod 664 /sys/class/leds/lp5523\:kb5/brightness
-    chmod 664 /sys/class/leds/lp5523\:kb6/brightness
-
 # notification leds
     chown system system /sys/class/leds/lp5523:r/brightness
     chown system system /sys/class/leds/lp5523:g/brightness
     chown system system /sys/class/leds/lp5523:b/brightness
 
-    chown system system /sys/bus/platform/devices/twl4030_vibra/pulse
-    chown system system /sys/class/backlight/acx565akm/brightness
     chown system system /sys/class/graphics/fb0/blank
-    chmod 0660 /sys/class/backlight/acx565akm/brightness
+    chmod 0660 /sys/devices/omapdss/display0/backlight/display0/brightness
+    chown system system /sys/devices/omapdss/display0/backlight/display0/brightness
     chmod 0660 /sys/class/graphics/fb0/blank
 
     chown system system /data/app
@@ -83,8 +69,6 @@ on boot
     #setprop ro.sys.fs.power_supply.bat.feature.capacity.now /capacity
     #setprop ro.sys.fs.power_supply.bat.feature.voltage.now /voltage_now
     #setprop ro.sys.fs.power_supply.bat.features.bat.temperature /temp
-
-#start maemo-box
 
 # Magical DSP INIT
 service baseimage /system/bin/logwrapper /system/bin/dspexec -v -T /system/lib/dsp/baseimage.dof
@@ -144,34 +128,6 @@ service dhcpcd_wlan0 /system/bin/logwrapper /system/bin/dhcpcd -d wlan0
     group system dhcp
     disabled
     oneshot
-
-service maemo-box /system/bin/logwrapper /system/maemo/bin/init_subsys
-    disabled
-    oneshot
-
-on property:init.svc.maemo-box.done=1
-    #start dsme
-    #start bme
-    #start bq27
-    #start mdbus
-
-service dsme /system/bin/logwrapper /system/maemo/bin/dsme
-    disabled
-
-service bme /system/bin/logwrapper /system/maemo/bin/bme
-    onrestart start bq27
-    disabled
-
-service bq27 /system/bin/logwrapper /system/maemo/bin/bq27
-    oneshot
-    disabled
-
-service mdbus /system/bin/logwrapper /system/maemo/bin/dbus
-    disabled
-
-service wlan_loader /system/bin/logwrapper /system/maemo/bin/wifi
-    oneshot
-    disabled
 
 service reboot /system/bin/reboot -n
     oneshot
