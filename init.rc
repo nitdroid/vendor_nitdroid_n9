@@ -57,7 +57,7 @@ loglevel 3
     mkdir /mnt/obb 0700 root system
     mount tmpfs tmpfs /mnt/obb mode=0755,gid=1000
 
-    symlink /initrd /mnt/initfs
+    mkdir /mnt/initfs
 
 #    mount rootfs rootfs / rw remount
 
