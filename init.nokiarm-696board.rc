@@ -40,6 +40,9 @@ on init
 
 on boot
 
+# workaround for deep sleep
+    write /sys/power/wake_lock sleepWorkaround
+
 # disable proximity sensor, we don't have HAL for it currently
     write /sys/devices/platform/gpio-switch/proximity/disable 1
 
