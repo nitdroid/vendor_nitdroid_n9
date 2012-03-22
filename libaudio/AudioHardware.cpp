@@ -141,6 +141,27 @@ void AudioHardware::setAudioRouting(int device)
             break;
 
         case AudioSystem::DEVICE_OUT_EARPIECE:
+            setMixerCtl(0, "DAC2 Digital Fine Playback Volume", "98");
+            setMixerCtl(0, "DAC2 Digital Coarse Playback Volume", "50");
+            setMixerCtl(0, "DAC2 Analog Playback Volume", "92");
+            setMixerCtl(0, "DAC2 Analog Playback Switch", "1");
+
+            setMixerCtl(0, "Digimic LR Swap", "Swapped");
+            setMixerCtl(0, "TX1 Digital Capture Volume", "0");
+            setMixerCtl(0, "Analog Left Headset Mic Capture Switch", "0");
+            setMixerCtl(0, "TX1 Capture Route", "Digimic0");
+
+            setMixerCtl(0, "PreDriv Playback Volume", "0");
+            setMixerCtl(0, "PredriveR Mixer AudioL2", "0");
+
+            setMixerCtl(0, "Earpiece Playback Volume", "67");
+            setMixerCtl(0, "Earpiece Mixer AudioL2", "1");
+            setMixerCtl(0, "Right Digital Loopback Volume", "100");
+
+            setMixerCtl(1, "Line to Line Out Volume", "0");
+            setMixerCtl(1, "DAC Digital Playback Switch", "1");
+            setMixerCtl(1, "FIFO Mode", "Mode 7 Low Power");
+
             LOGD("Routing: EARPIECE");
             break;
 
