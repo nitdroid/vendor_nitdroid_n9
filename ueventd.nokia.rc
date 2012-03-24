@@ -1,4 +1,0 @@
-#/dev/DspBridge                                 0666    root    root
-#/dev/cmt_speech                                0660    root    radio
-/dev/video*                                    0660    root    camera
-#/dev/omap-previewer                            0660    root    camera
