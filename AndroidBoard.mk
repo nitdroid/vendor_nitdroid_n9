@@ -19,7 +19,7 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/etc/vold.fstab:system/etc/vold.fstab \
 	$(LOCAL_PATH)/etc/modem.conf:system/etc/modem.conf \
 	$(LOCAL_PATH)/etc/gps.conf:system/etc/gps.conf \
-	$(LOCAL_PATH)/etc/init.nokia.sh:system/etc/init.nokia.sh \
+	$(LOCAL_PATH)/etc/harmount.sh:system/etc/harmount.sh \
 	$(LOCAL_PATH)/etc/dhcpcd/dhcpcd.conf:system/etc/dhcpcd/dhcpcd.conf \
 	$(LOCAL_PATH)/etc/wifi/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf \
 	$(LOCAL_PATH)/system/xbin/rr:system/xbin/rr
