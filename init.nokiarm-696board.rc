@@ -1,5 +1,8 @@
 on early-init
 
+    # IPv6 support
+    insmod /system/lib/modules/current/ipv6.ko
+
     # DSP
     insmod /system/lib/modules/current/mailbox.ko
     insmod /system/lib/modules/current/mailbox_mach.ko
@@ -105,11 +108,6 @@ on property:persist.service.radiolog.enable=1
 
 on property:persist.service.radiolog.enable=0
     stop radiolog
-
-service nokia-setup /system/bin/logwrapper /system/etc/init.nokia.sh
-    class main
-    oneshot
-    disabled
 
 service dsme /system/bin/fakedsme
     class main
