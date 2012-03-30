@@ -113,7 +113,7 @@ service dsme /system/bin/fakedsme
     class main
     disabled
 
-service harmount /system/bin/logwrapper /system/etc/harmount.sh
+service harmount /system/bin/sh /system/etc/harmount.sh
     class main
     oneshot
 
