@@ -34,6 +34,15 @@ on early-init
     insmod /system/lib/modules/current/twl4030-pwrbutton.ko
     insmod /system/lib/modules/current/twl4030_keypad.ko
 
+    # IOMMU and Camera
+    insmod /system/lib/modules/current/iommu.ko
+    insmod /system/lib/modules/current/iommu2.ko
+    insmod /system/lib/modules/current/iovmm.ko
+    insmod /system/lib/modules/current/omap3-iommu.ko
+    insmod /system/lib/modules/current/smiapp-power.ko
+    insmod /system/lib/modules/current/smiapp.ko
+    insmod /system/lib/modules/current/omap3-isp.ko
+
 on init
     write /sys/module/omapfb/parameters/android_mode 1
     write /sys/power/sleep_while_idle 1
