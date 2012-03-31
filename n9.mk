@@ -25,4 +25,4 @@ PRODUCT_NAME := n9
 PRODUCT_MODEL := Nokia N9
 
 # This is a high DPI device, so add the hdpi pseudo-locale
-PRODUCT_LOCALES := en_US hdpi
+PRODUCT_LOCALES += en_US hdpi
