@@ -3,6 +3,10 @@ on early-init
     # IPv6 support
     insmod /system/lib/modules/current/ipv6.ko
 
+    # DM/Crypt
+    insmod /system/lib/modules/current/dm-mod.ko
+    insmod /system/lib/modules/current/dm-crypt.ko
+
     # DSP
     insmod /system/lib/modules/current/mailbox.ko
     insmod /system/lib/modules/current/mailbox_mach.ko
