@@ -49,9 +49,8 @@ BUILD_JPEG_DECODER:= true
 endif
 
 CUSTOM_MODULES := libglib-2.0 libcmtspeechdata ofonod libofono-ril dbus-send
-CUSTOM_MODULES += gps.nokia
-CUSTOM_MODULES += audio.primary.omap3 
-CUSTOM_MODULES += tiwlan.ini
+CUSTOM_MODULES += gps.nokiarm-696board
+CUSTOM_MODULES += audio.primary.omap3
 
 CUSTOM_MODULES += libbridge dspexec \
 	libOMX_Core libLCML \
@@ -67,13 +66,10 @@ CUSTOM_MODULES += libbridge dspexec \
 BOARD_HAVE_FAKE_GPS := true
 
 # Wifi related defines
-BOARD_WPA_SUPPLICANT_DRIVER      := CUSTOM
-BOARD_WPA_SUPPLICANT_PRIVATE_LIB := 
-BOARD_WLAN_DEVICE                := wl1271
-BOARD_SOFTAP_DEVICE := wl1271
-WPA_SUPPLICANT_VERSION           := VER_0_6_X
-
-WIFI_DRIVER_MODULE_PATH     := "/system/lib/modules/current/tiwlan_drv.ko"
+WIFI_DRIVER_MODULE_PATH     := "/system/lib/modules/current/wl12xx_sdio.ko"
 WIFI_DRIVER_MODULE_ARG      := ""
-WIFI_DRIVER_MODULE_NAME     := "tiwlan_drv"
+WIFI_DRIVER_MODULE_NAME     := "wl12xx_sdio"
 WIFI_FIRMWARE_LOADER        := "wlan_loader"
+BOARD_WPA_SUPPLICANT_DRIVER      := WEXT
+BOARD_WLAN_DEVICE                := wl12xx
+#BOARD_SOFTAP_DEVICE := wl1271
