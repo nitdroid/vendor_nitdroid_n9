@@ -40,6 +40,7 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/etc/harmount.sh:system/etc/harmount.sh \
 	$(LOCAL_PATH)/etc/dhcpcd/dhcpcd.conf:system/etc/dhcpcd/dhcpcd.conf \
 	$(LOCAL_PATH)/etc/wifi/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf \
+	$(LOCAL_PATH)/etc/excluded-input-devices.xml:system/etc/excluded-input-devices.xml \
 	$(LOCAL_PATH)/system/xbin/rr:system/xbin/rr
 ##
 
