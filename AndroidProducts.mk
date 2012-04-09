@@ -46,7 +46,11 @@ PRODUCT_COPY_FILES += \
 
 # Input device calibration files
 PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/Atmel_mXT_Touchscreen.idc:system/usr/idc/Atmel_mXT_Touchscreen.idc
+	$(LOCAL_PATH)/Atmel_mXT_Touchscreen.idc:system/usr/idc/Atmel_mXT_Touchscreen.idc \
+	$(LOCAL_PATH)/TWL4030_Keypad.idc:system/usr/idc/TWL4030_Keypad.idc \
+	$(LOCAL_PATH)/TWL4030_Keypad.kl:system/usr/keylayout/TWL4030_Keypad.kl \
+	$(LOCAL_PATH)/TWL4030_Keypad.kcm:system/usr/keychars/TWL4030_Keypad.kcm
+
 ##
 
 # Permissions
