@@ -32,6 +32,7 @@
 #include <hardware/lights.h>
 
 /******************************************************************************/
+#define LP5521_CHANNELS 6
 
 static pthread_once_t g_init = PTHREAD_ONCE_INIT;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -52,7 +53,7 @@ char const*const LCD_BLANK_FILE
         = "/sys/devices/platform/omapfb/graphics/fb0/blank";
 
 char const*const KEYBOARD_FILE
-        = "/sys/class/leds/lp5523:kb%d/brightness";
+        = "/sys/class/leds/lp5523:channel%d/brightness";
 
 char const*const RED_LED_FILE
         = "/sys/class/leds/lp5523:r/brightness";
@@ -149,6 +150,26 @@ set_light_backlight(struct light_device_t* dev,
 		}
 	}
 #endif
+
+    pthread_mutex_unlock(&g_lock);
+    return err;
+}
+
+static int
+set_light_keyboard(struct light_device_t* dev,
+        struct light_state_t const* state)
+{
+    int err = 0;
+    int i = 0;
+    char file[100];
+    int brightness = rgb_to_brightness(state);
+    pthread_mutex_lock(&g_lock);
+    for(i = 0; i < LP5521_CHANNELS; i++) {
+        snprintf(file,sizeof(file),KEYBOARD_FILE,i);
+        err = write_int(file, brightness);
+        if (err != 0)
+            break;
+    }
 
     pthread_mutex_unlock(&g_lock);
     return err;
@@ -304,6 +325,8 @@ static int open_lights(const struct hw_module_t* module, char const* name,
             struct light_state_t const* state);
     if (0 == strcmp(LIGHT_ID_BACKLIGHT, name)) {
         set_light = set_light_backlight;
+    } else if (0 == strcmp(LIGHT_ID_KEYBOARD, name)) {
+        set_light = set_light_keyboard;
     }
 #if 0
     else if (0 == strcmp(LIGHT_ID_BATTERY, name)) {
