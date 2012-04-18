@@ -26,7 +26,101 @@
 
 #include <EGL/egl.h>
 
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <string.h>
+#include <stdlib.h>
+
 /*****************************************************************************/
+
+static int fb = -1;
+
+static int fbUpdateWindow(int fd, int x=0, int y=0, int width=854, int height=480)
+{
+#define _IOC(dir,type,nr,size)                  \
+    (((dir)  << _IOC_DIRSHIFT) |                \
+     ((type) << _IOC_TYPESHIFT) |               \
+     ((nr)   << _IOC_NRSHIFT) |                 \
+     ((size) << _IOC_SIZESHIFT))
+#define _IOW(type,nr,size)      _IOC(_IOC_WRITE,(type),(nr),(_IOC_TYPECHECK(size)))
+
+#define OMAP_IOW(num, dtype)	_IOW('O', num, dtype)
+
+    struct omapfb_update_window {
+        __u32 x, y;
+        __u32 width, height;
+        __u32 format;
+        __u32 out_x, out_y;
+        __u32 out_width, out_height;
+        __u32 reserved[8];
+    };
+
+    const unsigned int OMAPFB_UPDATE_WINDOW = OMAP_IOW(54, struct omapfb_update_window);
+    const unsigned int OMAPFB_SET_UPDATE_MODE = OMAP_IOW(40, int);
+
+    struct omapfb_update_window update;
+    memset(&update, 0, sizeof(omapfb_update_window));
+    update.format = 0; /*OMAPFB_COLOR_RGB565*/
+    update.x = x;
+    update.y = y;
+    update.out_x = x;
+    update.out_y = y;
+    update.out_width = width;
+    update.out_height = height;
+    update.width = width;
+    update.height = height;
+    if (ioctl(fd, OMAPFB_UPDATE_WINDOW, &update) < 0) {
+        LOGE("Could not ioctl(OMAPFB_UPDATE_WINDOW): %s", strerror(errno));
+    }
+
+    return 0;
+}
+
+static int readSomethingFromFile(const char *file)
+{
+    int f = open(file, O_RDONLY);
+    int res = 0;
+
+    if (f > 0) {
+        char buf[32];
+        if ( read(f, buf, sizeof(buf)) <= 0) {
+            LOGE("Error reading from file '%s': %s", file, strerror(errno));
+            res = errno;
+        }
+    }
+    else {
+        LOGE("Can't open file '%s' for reading: %s", file, strerror(errno));
+        res = errno;
+    }
+
+    return res;
+}
+
+static void* wakeupHackThread(void *)
+{
+    //
+    // after awake several window updates needed to avoid freezes in SurfaceFlinger
+    //
+
+    while(1)
+    {
+        // wait for fb wake
+        if (readSomethingFromFile("/sys/power/wait_for_fb_wake") != 0)
+            break;
+
+        // TODO make it proper
+        usleep(100000);
+        for(int i = 0; i < 10; i++)
+            fbUpdateWindow(fb);
+
+        // wait for sleep to lock in next read
+        if (readSomethingFromFile("/sys/power/wait_for_fb_sleep") != 0)
+            break;
+    }
+
+    return 0;
+}
 
 struct hwc_context_t {
     hwc_composer_device_t device;
@@ -82,11 +176,29 @@ static int hwc_set(hwc_composer_device_t *dev,
         hwc_surface_t sur,
         hwc_layer_list_t* list)
 {
-    //for (size_t i=0 ; i<list->numHwLayers ; i++) {
-    //    dump_layer(&list->hwLayers[i]);
-    //}
+#if 0
+    LOGD("size: %d, HWC_GEOMETRY_CHANGED: %d", list->numHwLayers, list->flags & HWC_GEOMETRY_CHANGED);
+    for (size_t i=0 ; i<list->numHwLayers ; i++) {
+        dump_layer(&list->hwLayers[i]);
+    }
+#endif
+
+    if (list && list->flags & HWC_GEOMETRY_CHANGED) {
+        fbUpdateWindow(fb, 0, 0, 2, 480);
+#if 0
+        LOGD("list & HWC_GEOMETRY_CHANGED");
+        for (size_t i=0 ; i<list->numHwLayers ; i++) {
+            dump_layer(&list->hwLayers[i]);
+        }
+#endif
+    }
+    //else
+    //LOGD("skipping second fbUpdateWindow");
 
     EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
+
+    fbUpdateWindow(fb);
+
     if (!sucess) {
         return HWC_EGL_ERROR;
     }
@@ -126,6 +238,15 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
         *device = &dev->device.common;
         status = 0;
+
+        fb = open("/dev/graphics/fb0", O_RDWR, 0);
+        if (fb < 0)
+            status = errno;
+        else {
+            pthread_t th;
+            pthread_create(&th, 0, wakeupHackThread, 0);
+            pthread_detach(th);
+        }
     }
     return status;
 }
