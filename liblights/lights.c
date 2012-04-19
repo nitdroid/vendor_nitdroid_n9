@@ -18,6 +18,7 @@
 #define LOG_TAG "lights"
 
 #include <cutils/log.h>
+#include <cutils/properties.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -298,6 +299,17 @@ set_light_attention(struct light_device_t* dev,
     return 0;
 }
 
+static int isKeyboardPresent()
+{
+    char propValue[PROPERTY_VALUE_MAX];
+    if ( property_get("ro.hardware", propValue, NULL) &&
+         strcmp(propValue, "nokiarm-696board") == 0 ) {
+        LOGW("Keyboard isn't present on %s", propValue);
+        return 0;
+    }
+
+    return 1;
+}
 
 /** Close the lights device */
 static int
@@ -325,7 +337,7 @@ static int open_lights(const struct hw_module_t* module, char const* name,
             struct light_state_t const* state);
     if (0 == strcmp(LIGHT_ID_BACKLIGHT, name)) {
         set_light = set_light_backlight;
-    } else if (0 == strcmp(LIGHT_ID_KEYBOARD, name)) {
+    } else if (0 == strcmp(LIGHT_ID_KEYBOARD, name) && isKeyboardPresent()) {
         set_light = set_light_keyboard;
     }
 #if 0
