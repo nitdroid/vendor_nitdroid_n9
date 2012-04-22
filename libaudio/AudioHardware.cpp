@@ -148,7 +148,7 @@ void AudioHardware::setAudioRouting(int device)
             setMixerCtl(0, "PredriveR Mixer AudioL2", "0");
             setMixerCtl(1, "Line to Line Out Volume", "0");
             setMixerCtl(1, "DAC Digital Playback Switch", "1");
-            setMixerCtl(1, "TPA6140A2 Headphone Playback Volume", "35");
+            setMixerCtl(1, "TPA6140A2 Headphone Playback Volume", "20");
             type = SOUND_TYPE_HEADSET;
             break;
 
@@ -180,13 +180,20 @@ void AudioHardware::setAudioRouting(int device)
         case AudioSystem::DEVICE_OUT_SPEAKER:
         case AudioSystem::DEVICE_OUT_SPEAKER | AudioSystem::DEVICE_OUT_WIRED_HEADSET:
             LOGD("Routing: SPEAKERS");
-            setMixerCtl(0, "DAC1 Analog Playback Switch", "0");
+            setMixerCtl(0, "DAC1 Digital Fine Playback Volume", "63");
+            setMixerCtl(0, "DAC2 Digital Fine Playback Volume", "63");
+            setMixerCtl(0, "DAC1 Digital Coarse Playback Volume", "0");
+            setMixerCtl(0, "DAC2 Digital Coarse Playback Volume", "0");
             setMixerCtl(0, "DAC1 Analog Playback Volume", "0");
-            setMixerCtl(0, "DAC2 Analog Playback Volume", "100");
+            setMixerCtl(0, "DAC2 Analog Playback Volume", "18");
+            setMixerCtl(0, "DAC1 Analog Playback Switch", "0");
             setMixerCtl(0, "DAC2 Analog Playback Switch", "1");
+            setMixerCtl(0, "PreDriv Playback Volume", "2");
+            setMixerCtl(0, "Headset Playback Volume", "0");
+            setMixerCtl(0, "Carkit Playback Volume", "0");
+            setMixerCtl(0, "Earpiece Playback Volume", "0");
+
             setMixerCtl(0, "TX1 Digital Capture Volume", "0");
-            setMixerCtl(0, "PreDriv Playback Volume", "67");
-            setMixerCtl(0, "DAC1 Digital Fine Playback Volume", "100");
             setMixerCtl(0, "PredriveR Mixer AudioL2", "1");
             setMixerCtl(1, "Line to Line Out Volume", "100");
             setMixerCtl(1, "DAC Digital Playback Switch", "0");
@@ -835,7 +842,8 @@ struct pcm *AudioHardware::openPcmOut_l()
 
 
         TRACE_DRIVER_IN(DRV_PCM_OPEN)
-        mPcm = pcm_open(0, 0, flags, &config);
+        LOGD("reopening");
+        mPcm = pcm_open(type == SOUND_TYPE_HEADSET ? 1 : 0, 0, flags, &config);
         TRACE_DRIVER_OUT
         if (!pcm_is_ready(mPcm)) {
             LOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_get_error(mPcm));
@@ -1620,7 +1628,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     unsigned flags = PCM_IN;
 
     struct pcm_config config = {
-        channels : mChannelCount,
+        channels : 2,
         rate : AUDIO_HW_IN_SAMPLERATE,
         period_size : AUDIO_HW_IN_PERIOD_SZ,
         period_count : AUDIO_HW_IN_PERIOD_CNT,
