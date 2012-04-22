@@ -58,7 +58,7 @@ namespace android_audio_legacy {
 // Default audio input sample format
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)
 // Kernel pcm in buffer size in frames at 44.1kHz (before resampling)
-#define AUDIO_HW_IN_PERIOD_SZ 2
+#define AUDIO_HW_IN_PERIOD_SZ 1024
 #define AUDIO_HW_IN_PERIOD_CNT 2
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
