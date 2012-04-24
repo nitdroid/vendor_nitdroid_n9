@@ -115,7 +115,7 @@ int SensorBase::openInput(const char* inputName) {
             }
             if (!strcmp(name, inputName)) {
                 strcpy(input_name, filename);
-                LOGD("input: %s->", name, filename);
+                LOGD("input: \"%s\"->%s, fd=%d", name, filename, fd);
                 break;
             } else {
                 close(fd);
