@@ -212,10 +212,13 @@ int sensors_poll_context_t::activate(int handle, int enabled) {
     int index = handleToDriver(handle);
     if (index < 0) return index;
     int err =  mSensors[index]->enable(handle, enabled);
-    if (enabled && !err) {
-        const char wakeMessage(WAKE_MESSAGE);
-        int result = write(mWritePipeFd, &wakeMessage, 1);
-        LOGE_IF(result<0, "error sending wake message (%s)", strerror(errno));
+    if (!err) {
+        mPollFds[index].fd = mSensors[index]->getFd();
+        if (enabled) {
+            const char wakeMessage(WAKE_MESSAGE);
+            int result = write(mWritePipeFd, &wakeMessage, 1);
+            LOGE_IF(result<0, "error sending wake message (%s)", strerror(errno));
+        }
     }
     return err;
 }
@@ -237,7 +240,9 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
         for (int i=0 ; count && i<numSensorDrivers ; i++) {
             SensorBase* const sensor(mSensors[i]);
             if ((mPollFds[i].revents & POLLIN) || (sensor->hasPendingEvents())) {
-                int nb = sensor->readEvents(data, count);
+                int nb = 0;
+                if (mPollFds[i].fd != -1)
+                    nb = sensor->readEvents(data, count);
                 if (nb < count) {
                     // no more data for this sensor
                     mPollFds[i].revents = 0;
@@ -253,7 +258,15 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
             // some events immediately or just wait if we don't have
             // anything to return
             do {
-                n = poll(mPollFds, numFds, nbEvents ? 0 : -1);
+                // FIXME: don't hard code mPollFds[akm].fd here
+                // re-create actual pollFds array every time, depending on sensors enabled
+                if (mPollFds[akm].fd != -1)
+                    n = poll(mPollFds, numFds, nbEvents ? 0 : -1);
+                else {
+                    LOGD("Trying to sleep until wake");
+                    n = poll(&mPollFds[wake], 1, -1);
+                    LOGD("Woken");
+                }
             } while (n < 0 && errno == EINTR);
             if (n<0) {
                 LOGE("poll() failed (%s)", strerror(errno));

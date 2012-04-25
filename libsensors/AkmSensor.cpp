@@ -31,35 +31,12 @@
 
 /*****************************************************************************/
 
-int (*akm_is_sensor_enabled)(uint32_t sensor_type);
-int (*akm_enable_sensor)(uint32_t sensor_type);
-int (*akm_disable_sensor)(uint32_t sensor_type);
-int (*akm_set_delay)(uint32_t sensor_type, uint64_t delay);
-
-int stub_is_sensor_enabled(uint32_t sensor_type) {
-    return 0;
-}
-
-int stub_enable_disable_sensor(uint32_t sensor_type) {
-    LOGD("stub_enable_disable_sensor %d", sensor_type);
-    return 0;//-ENODEV;
-}
-
-int stub_set_delay(uint32_t sensor_type, uint64_t delay) {
-    return -ENODEV;
-}
-
 AkmSensor::AkmSensor()
 : SensorBase(NULL, "ST LIS3LV02DL Accelerometer"),
       mEnabled(0),
       mPendingMask(0),
       mInputReader(32)
 {
-    akm_is_sensor_enabled = stub_is_sensor_enabled;
-    akm_enable_sensor = stub_enable_disable_sensor;
-    akm_disable_sensor = stub_enable_disable_sensor;
-    akm_set_delay = stub_set_delay;
-
     memset(mPendingEvents, 0, sizeof(mPendingEvents));
 
     mPendingEvents[Accelerometer].version = sizeof(sensors_event_t);
@@ -81,7 +58,7 @@ AkmSensor::AkmSensor()
     struct input_absinfo absinfo;
     short flags = 0;
 
-    if (akm_is_sensor_enabled(SENSOR_TYPE_ACCELEROMETER))  {
+    if (1/*akm_is_sensor_enabled(SENSOR_TYPE_ACCELEROMETER)*/)  {
         mEnabled |= 1<<Accelerometer;
         if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_ACCEL_X), &absinfo)) {
             mPendingEvents[Accelerometer].acceleration.y = absinfo.value * CONVERT_A_X;
@@ -93,6 +70,7 @@ AkmSensor::AkmSensor()
             mPendingEvents[Accelerometer].acceleration.z = absinfo.value * CONVERT_A_Z;
         }
     }
+#if 0
     if (akm_is_sensor_enabled(SENSOR_TYPE_MAGNETIC_FIELD))  {
         mEnabled |= 1<<MagneticField;
         if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_MAGV_X), &absinfo)) {
@@ -120,9 +98,7 @@ AkmSensor::AkmSensor()
             mPendingEvents[Orientation].orientation.status = uint8_t(absinfo.value & SENSOR_STATE_MASK);
         }
     }
-
-    // disable temperature sensor, since it is not supported
-    akm_disable_sensor(SENSOR_TYPE_TEMPERATURE);
+#endif
 }
 
 AkmSensor::~AkmSensor()
@@ -154,10 +130,18 @@ int AkmSensor::enable(int32_t handle, int en)
             case Orientation:   sensor_type = SENSOR_TYPE_ORIENTATION;  break;
         }
         short flags = newState;
-        if (en)
-            err = akm_enable_sensor(sensor_type);
-        else
-            err = akm_disable_sensor(sensor_type);
+        if (en) {
+            if (data_fd <= 0) {
+                data_fd = openInput(data_name);
+            }
+        }
+        else {
+            if (data_fd > 0) {
+                int r = close(data_fd);
+                LOGD("data_fd closed: %d", r);
+                data_fd = -1;
+            }
+        }
 
         LOGE_IF(err, "Could not change sensor state (%s)", strerror(-err));
         if (!err) {
@@ -184,13 +168,18 @@ int AkmSensor::setDelay(int32_t handle, int64_t ns)
     if (sensor_type == 0)
         return -EINVAL;
 
-    return akm_set_delay(sensor_type, ns);
+    return 0;
 }
 
 int AkmSensor::readEvents(sensors_event_t* data, int count)
 {
     if (count < 1)
         return -EINVAL;
+
+    if (data_fd <= 0) {
+        LOGD("readEvents, but data_fd == 0");
+        return 0;
+    }
 
     ssize_t n = mInputReader.fill(data_fd);
     if (n < 0)
