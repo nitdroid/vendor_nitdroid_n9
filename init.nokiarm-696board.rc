@@ -1,7 +1,8 @@
 on early-init
 
-    # IPv6 support
+    # IPv6 and WiFi support
     insmod /system/lib/modules/current/ipv6.ko
+    insmod /system/lib/modules/current/wl12xx.ko
 
     # DM/Crypt
     insmod /system/lib/modules/current/dm-mod.ko
@@ -39,13 +40,13 @@ on early-init
     insmod /system/lib/modules/current/twl4030_keypad.ko
 
     # IOMMU and Camera
-    insmod /system/lib/modules/current/iommu.ko
-    insmod /system/lib/modules/current/iommu2.ko
-    insmod /system/lib/modules/current/iovmm.ko
-    insmod /system/lib/modules/current/omap3-iommu.ko
-    insmod /system/lib/modules/current/smiapp-power.ko
-    insmod /system/lib/modules/current/smiapp.ko
-    insmod /system/lib/modules/current/omap3-isp.ko
+    #insmod /system/lib/modules/current/iommu.ko
+    #insmod /system/lib/modules/current/iommu2.ko
+    #insmod /system/lib/modules/current/iovmm.ko
+    #insmod /system/lib/modules/current/omap3-iommu.ko
+    #insmod /system/lib/modules/current/smiapp-power.ko
+    #insmod /system/lib/modules/current/smiapp.ko
+    #insmod /system/lib/modules/current/omap3-isp.ko
 
 on init
     write /sys/module/omapfb/parameters/android_mode 1
@@ -126,6 +127,11 @@ service dsme /system/bin/fakedsme
     class main
     disabled
 
+service bme /system/bin/sh /system/etc/bme.sh
+    class main
+    disabled
+    onrestart restart dsme
+
 service harmount /system/bin/sh /system/etc/harmount.sh
     class main
     oneshot
@@ -137,7 +143,12 @@ service wpa_supplicant /system/bin/wpa_supplicant -iwlan0 -c/data/misc/wifi/wpa_
     disabled
     oneshot
 
-service dhcpcd_wlan0 /system/bin/logwrapper /system/bin/dhcpcd -d wlan0
+service wlan_loader /system/bin/logwrapper /system/bin/sh /system/etc/wlan_loader.sh
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_wlan0 /system/bin/logwrapper /system/bin/dhcpcd -AKBL
     class main
     group system dhcp
     disabled
