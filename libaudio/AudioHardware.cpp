@@ -1432,7 +1432,6 @@ status_t AudioHardware::AudioStreamInALSA::set(
 
     if (pChannels == 0 || (*pChannels != AudioSystem::CHANNEL_IN_MONO &&
         *pChannels != AudioSystem::CHANNEL_IN_STEREO)) {
-        *pChannels = AUDIO_HW_IN_CHANNELS;
         return BAD_VALUE;
     }
 
@@ -1447,7 +1446,7 @@ status_t AudioHardware::AudioStreamInALSA::set(
     mSampleRate = rate;
     if (mSampleRate != AUDIO_HW_OUT_SAMPLERATE) {
         mDownSampler = new AudioHardware::DownSampler(mSampleRate,
-                                                  mChannelCount,
+                                                  *pChannels,
                                                   AUDIO_HW_IN_PERIOD_SZ,
                                                   this);
         status_t status = mDownSampler->initCheck();
@@ -1629,7 +1628,7 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
 
     struct pcm_config config = {
         channels : 2,
-        rate : AUDIO_HW_IN_SAMPLERATE,
+        rate : (mChannelCount == 2 ? AUDIO_HW_IN_SAMPLERATE : AUDIO_HW_IN_SAMPLERATE/2) ,
         period_size : AUDIO_HW_IN_PERIOD_SZ,
         period_count : AUDIO_HW_IN_PERIOD_CNT,
         format : PCM_FORMAT_S16_LE,
