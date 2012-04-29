@@ -193,7 +193,11 @@ void AudioHardware::setAudioRouting(int device)
             setMixerCtl(0, "Carkit Playback Volume", "0");
             setMixerCtl(0, "Earpiece Playback Volume", "0");
 
+            setMixerCtl(0, "Digimic LR Swap", "Swapped");
             setMixerCtl(0, "TX1 Digital Capture Volume", "0");
+            setMixerCtl(0, "Analog Left Headset Mic Capture Switch", "0");
+            setMixerCtl(0, "TX1 Capture Route", "Digimic0");
+
             setMixerCtl(0, "PredriveR Mixer AudioL2", "1");
             setMixerCtl(1, "Line to Line Out Volume", "100");
             setMixerCtl(1, "DAC Digital Playback Switch", "0");
@@ -1626,15 +1630,24 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
 {
     unsigned flags = PCM_IN;
 
+    // XXX: anal hardcore double penetration. Dirtiest thing I ever wrote.
+    // @TODO REMOVE THIS CRAP
+    // Using of half samplerate value for downsampling is easiest way to get mono from stereo.
+    // Also: While SIP-call is active, we use regular samplerates, dunno why.
+    int rate = AUDIO_HW_IN_SAMPLERATE;
+    if (mChannelCount == 2  || mHardware->mode() == AudioSystem::MODE_IN_COMMUNICATION)
+        rate = AUDIO_HW_IN_SAMPLERATE/2;
+
     struct pcm_config config = {
         channels : 2,
-        rate : (mChannelCount == 2 ? AUDIO_HW_IN_SAMPLERATE : AUDIO_HW_IN_SAMPLERATE/2) ,
+        rate : rate,
         period_size : AUDIO_HW_IN_PERIOD_SZ,
         period_count : AUDIO_HW_IN_PERIOD_CNT,
         format : PCM_FORMAT_S16_LE,
     };
 
-    LOGV("open pcm_in driver");
+    LOGD("open pcm_in driver: mMode=%d, mChannelCount=%d, rate=%d, period_sz=%d, period_count=%d",
+         mHardware->mode(), mChannelCount, config.rate, config.period_size, config.period_count);
     TRACE_DRIVER_IN(DRV_PCM_OPEN)
     mPcm = pcm_open(0, 0, flags, &config);
     TRACE_DRIVER_OUT
