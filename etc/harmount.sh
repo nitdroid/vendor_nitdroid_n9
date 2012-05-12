@@ -9,18 +9,15 @@ mount -t sysfs sysfs ${HARMATTAN_ROOT}/sys
 
 mkdir /dev/shm 2> /dev/null
 mount -o bind /dev ${HARMATTAN_ROOT}/dev
-#mount -t tmpfs tmpfs -orw,nosuid,nodev,noatime,size=65536k ${HARMATTAN_ROOT}/dev/shm
 
 mknod -m 644 ${HARMATTAN_ROOT}/dev/mtd1 c 90 2
-
-#rm /mnt/initfs/tmp/dsmesock ; rm /mnt/initfs/dev/shm/iphb
-#chroot ${HARMATTAN_ROOT} /www 2>/dev/null 1>/dev/null &
 
 echo "ondemand" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 start dsme
-sleep 1
+start bme
 
-strace chroot ${HARMATTAN_ROOT} /usr/sbin/bme_RX-71 -u -v 5 -c /usr/lib/hwi/hw/rx71.so
+chroot ${HARMATTAN_ROOT} /usr/bin/mxt_configure.sh
 
-#LD_LIBRARY_PATH=/lib:/usr/lib PATH=/bin:/sbin:/usr/bin:/usr/sbin chroot ${HARMATTAN_ROOT} /sbin/dsme -p /lib/dsme/libstartup.so -d
+SERIALNO=$( chroot ${HARMATTAN_ROOT} /bin/sh -c "sysinfoclient -g /device/production-sn | sed -e 's/.*= //'" )
+setprop ro.serialno ${SERIALNO}

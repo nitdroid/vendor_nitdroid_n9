@@ -32,12 +32,16 @@ on early-init
     # Accelerometer
     insmod /system/lib/modules/current/lis3lv02d.ko
     insmod /system/lib/modules/current/lis3lv02d_i2c.ko
-    insmod /system/lib/modules/current/twl5031-aci.ko
 
     # HW keys
     insmod /system/lib/modules/current/keychord.ko
     insmod /system/lib/modules/current/twl4030-pwrbutton.ko
     insmod /system/lib/modules/current/twl4030_keypad.ko
+    insmod /system/lib/modules/current/twl5031-aci.ko
+
+    # Leds, vibra
+    insmod /system/lib/modules/current/leds-lp5521.ko
+    insmod /system/lib/modules/current/vibra_spi.ko
 
     # IOMMU and Camera
     #insmod /system/lib/modules/current/iommu.ko
@@ -64,14 +68,22 @@ on boot
     write /sys/devices/platform/gpio-switch/proximity/disable 1
 
 # notification leds
-    chown system system /sys/class/leds/lp5523:r/brightness
-    chown system system /sys/class/leds/lp5523:g/brightness
-    chown system system /sys/class/leds/lp5523:b/brightness
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0032/leds/lp5521:channel0/brightness
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0032/engine1_mode
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0032/engine1_load
+    chown system system /sys/class/leds/lp5523:channel1/brightness
+    chown system system /sys/class/leds/lp5523:channel2/brightness
+    chown system system /sys/class/leds/lp5523:channel3/brightness
+    chown system system /sys/class/leds/lp5523:channel4/brightness
+    chown system system /sys/class/leds/lp5523:channel5/brightness
+    chown system system /sys/class/leds/lp5523:channel6/brightness
 
     chown system system /sys/class/graphics/fb0/blank
     chmod 0660 /sys/devices/omapdss/display0/backlight/display0/brightness
     chown system system /sys/devices/omapdss/display0/backlight/display0/brightness
     chmod 0660 /sys/class/graphics/fb0/blank
+
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-004b/disable_ts
 
     chown system system /data/app
     chmod 0771 /data/app
@@ -79,16 +91,6 @@ on boot
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chmod 0660                /sys/class/rfkill/rfkill0/state
-
-# battery status
-    #setprop ro.sys.fs.power_supply.ac /AC0
-    #setprop ro.sys.fs.power_supply.bat /bq27200-0
-    #setprop ro.sys.fs.power_supply.ac.feature.online /online
-    #setprop ro.sys.fs.power_supply.bat.feature.status /status
-    #setprop ro.sys.fs.power_supply.bat.feature.present /present
-    #setprop ro.sys.fs.power_supply.bat.feature.capacity.now /capacity
-    #setprop ro.sys.fs.power_supply.bat.feature.voltage.now /voltage_now
-    #setprop ro.sys.fs.power_supply.bat.features.bat.temperature /temp
 
 # Magical DSP INIT
 service baseimage /system/bin/logwrapper /system/bin/dspexec -v -T /system/lib/dsp/baseimage.dof
