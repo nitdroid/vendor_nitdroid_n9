@@ -11,6 +11,13 @@ PRODUCT_PACKAGES := \
     SpareParts \
     SoundRecorder \
     VoiceDialer
+
+# Live Wallpapers
+PRODUCT_PACKAGES += \
+    LiveWallpapers \
+    LiveWallpapersPicker \
+    VisualizationWallpapers \
+    librs_jni
 ##
 
 # Inherit from those products. Most specific first.
