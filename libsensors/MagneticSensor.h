@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2012 The NITDroid Open Source Project
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,47 +15,38 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_AKM_SENSOR_H
-#define ANDROID_AKM_SENSOR_H
+#ifndef ANDROID_MAGNETIC_SENSOR_H
+#define ANDROID_MAGNETIC_SENSOR_H
 
 #include <stdint.h>
 #include <errno.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
 
-
 #include "sensors.h"
 #include "SensorBase.h"
-#include "InputEventReader.h"
 
 /*****************************************************************************/
 
-struct input_event;
+class MagneticSensor : public SensorBase {
+    int mEnabled;
+    sensors_event_t mPendingEvent;
+    bool mHasPendingEvent;
+    char input_sysfs_path[PATH_MAX];
+    int input_sysfs_path_len;
+    int64_t mEnabledTime;
 
-class AkmSensor : public SensorBase {
+    int setInitialState();
+
 public:
-            AkmSensor();
-    virtual ~AkmSensor();
-
-    enum {
-        Accelerometer   = 0,
-        Orientation     = 1,
-        numSensors
-    };
-
+            MagneticSensor();
+    virtual ~MagneticSensor();
+    virtual int readEvents(sensors_event_t* data, int count);
+    virtual bool hasPendingEvents() const;
     virtual int setDelay(int32_t handle, int64_t ns);
     virtual int enable(int32_t handle, int enabled);
-    virtual int readEvents(sensors_event_t* data, int count);
-    void processEvent(int code, int value);
-
-private:
-    int loadAKMLibrary();
-    uint32_t mEnabled;
-    uint32_t mPendingMask;
-    InputEventCircularReader mInputReader;
-    sensors_event_t mPendingEvents[numSensors];
 };
 
 /*****************************************************************************/
 
-#endif  // ANDROID_AKM_SENSOR_H
+#endif  // ANDROID_MAGNETIC_SENSOR_H

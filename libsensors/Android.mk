@@ -31,9 +31,10 @@ LOCAL_SRC_FILES := 						\
 				SensorBase.cpp			\
 				LightSensor.cpp			\
 				ProximitySensor.cpp		\
-				AkmSensor.cpp                   \
-				GyroSensor.cpp                  \
-                                InputEventReader.cpp
+				AkmSensor.cpp           \
+				MagneticSensor.cpp      \
+				GyroSensor.cpp          \
+                InputEventReader.cpp
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils libdl
 

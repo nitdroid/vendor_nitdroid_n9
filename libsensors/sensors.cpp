@@ -36,6 +36,7 @@
 #include "LightSensor.h"
 #include "ProximitySensor.h"
 #include "AkmSensor.h"
+#include "MagneticSensor.h"
 #include "GyroSensor.h"
 
 /*****************************************************************************/
@@ -71,10 +72,10 @@ static const struct sensor_t sSensorList[] = {
           "STMicroelectronics",
           1, SENSORS_ACCELERATION_HANDLE,
           SENSOR_TYPE_ACCELEROMETER, RANGE_A, CONVERT_A, 0.23f, 20000, { } },
-        // { "AK8973 3-axis Magnetic field sensor",
-        //   "Asahi Kasei Microdevices",
-        //   1, SENSORS_MAGNETIC_FIELD_HANDLE,
-        //   SENSOR_TYPE_MAGNETIC_FIELD, 2000.0f, CONVERT_M, 6.8f, 16667, { } },
+        { "AK8975 3-axis Magnetic field sensor",
+          "Asahi Kasei Microdevices",
+           1, SENSORS_MAGNETIC_FIELD_HANDLE,
+           SENSOR_TYPE_MAGNETIC_FIELD, 2000.0f, CONVERT_M, 0.35f, 16667, { } },
         // { "AK8973 Orientation sensor",
         //   "Asahi Kasei Microdevices",
         //   1, SENSORS_ORIENTATION_HANDLE,
@@ -134,6 +135,7 @@ struct sensors_poll_context_t {
 private:
     enum {
         akm             = 0,
+        magnetic        = 1,
         // light           = 0,
         // proximity       = 1,
         // gyro            = 3,
@@ -150,9 +152,10 @@ private:
     int handleToDriver(int handle) const {
         switch (handle) {
             case ID_A:
-            case ID_M:
             case ID_O:
                 return akm;
+            case ID_M:
+                return magnetic;
             // case ID_P:
             //     return proximity;
             // case ID_L:
@@ -182,6 +185,11 @@ sensors_poll_context_t::sensors_poll_context_t()
     mPollFds[akm].fd = mSensors[akm]->getFd();
     mPollFds[akm].events = POLLIN;
     mPollFds[akm].revents = 0;
+
+    mSensors[magnetic] = new MagneticSensor();
+    mPollFds[magnetic].fd = mSensors[magnetic]->getFd();
+    mPollFds[magnetic].events = POLLIN;
+    mPollFds[magnetic].revents = 0;
 
     // mSensors[gyro] = new GyroSensor();
     // mPollFds[gyro].fd = mSensors[gyro]->getFd();
