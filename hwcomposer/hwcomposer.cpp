@@ -21,6 +21,7 @@
 
 #include <cutils/log.h>
 #include <cutils/atomic.h>
+#include <cutils/properties.h>
 
 #include <hardware/hwcomposer.h>
 
@@ -33,6 +34,16 @@
 #include <stdlib.h>
 
 /*****************************************************************************/
+
+#define CPUFREQ "/sys/devices/system/cpu/cpu0/cpufreq/"
+
+static const char CPUFREQ_GOVERNOR[] = CPUFREQ "scaling_governor";
+static const char CPUFREQ_SETSPEED[] = CPUFREQ "scaling_setspeed";
+
+static const char LCD_BLANK[] = "/sys/class/graphics/fb0/blank";
+static const char DISABLE_TS[] = "/sys/devices/platform/i2c_omap.2/i2c-2/2-004b/disable_ts";
+static const char CPR_COEF[] = "/sys/devices/platform/omapdss/manager0/cpr_coef";
+static const char CPR_ENABLE[] = "/sys/devices/platform/omapdss/manager0/cpr_enable";
 
 static int fb = -1;
 
@@ -74,6 +85,7 @@ static int fbUpdateWindow(int fd, int x=0, int y=0, int width=854, int height=48
         LOGE("Could not ioctl(OMAPFB_UPDATE_WINDOW): %s", strerror(errno));
     }
 
+    //LOGD("fbUpdateWindow(%d, %d, %d, %d)", x, y, width, height);
     return 0;
 }
 
@@ -97,8 +109,29 @@ static int readSomethingFromFile(const char *file)
     return res;
 }
 
+static int writeStringToFile(const char *file, const char *data)
+{
+    int res = 0;
+    int f = open(file, O_WRONLY);
+    if (f <= 0) {
+        LOGE("writeStringToFile can't open file %s: %s", file, strerror(errno));
+        return errno;
+    }
+
+    int len = strlen(data);
+    if (len != write(f, data, len)) {
+        LOGE("writeStringToFile(%s, %s) failed: %s", file, data, strerror(errno));
+        res = errno;
+    }
+
+    close(f);
+    return res;
+}
+
 static void* wakeupHackThread(void *)
 {
+    char propValue[PROPERTY_VALUE_MAX];
+
     //
     // after awake several window updates needed to avoid freezes in SurfaceFlinger
     //
@@ -109,6 +142,17 @@ static void* wakeupHackThread(void *)
         if (readSomethingFromFile("/sys/power/wait_for_fb_wake") != 0)
             break;
 
+        writeStringToFile(LCD_BLANK, "0\n");
+        writeStringToFile(DISABLE_TS, "0\n");
+        writeStringToFile(CPUFREQ_GOVERNOR, "ondemand");
+
+        // set user-defined (see /default.prop) colour profile for LCD
+        if ( property_get("hw.lcd.colourprofile", propValue, NULL)) {
+            LOGD("Colour profile: %s", propValue);
+            writeStringToFile(CPR_COEF, propValue);
+            writeStringToFile(CPR_ENABLE, "1");
+        }
+
         // TODO make it proper
         usleep(100000);
         for(int i = 0; i < 10; i++)
@@ -117,6 +161,12 @@ static void* wakeupHackThread(void *)
         // wait for sleep to lock in next read
         if (readSomethingFromFile("/sys/power/wait_for_fb_sleep") != 0)
             break;
+
+        writeStringToFile(LCD_BLANK, "1\n");
+        writeStringToFile(DISABLE_TS, "1\n");
+        writeStringToFile(CPUFREQ_GOVERNOR, "userspace");
+        writeStringToFile(CPUFREQ_SETSPEED, "300000");
+        //writeStringToFile(CPR_ENABLE, "0");
     }
 
     return 0;
@@ -182,18 +232,6 @@ static int hwc_set(hwc_composer_device_t *dev,
         dump_layer(&list->hwLayers[i]);
     }
 #endif
-
-    if (list && list->flags & HWC_GEOMETRY_CHANGED) {
-        fbUpdateWindow(fb, 0, 0, 2, 480);
-#if 0
-        LOGD("list & HWC_GEOMETRY_CHANGED");
-        for (size_t i=0 ; i<list->numHwLayers ; i++) {
-            dump_layer(&list->hwLayers[i]);
-        }
-#endif
-    }
-    //else
-    //LOGD("skipping second fbUpdateWindow");
 
     EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
 
