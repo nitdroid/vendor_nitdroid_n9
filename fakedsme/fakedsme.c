@@ -56,7 +56,10 @@ static void* dsme()
 
   while (1)
   {
-    read(s2, foo, sizeof(foo));
+    if (read(s2, foo, sizeof(foo)) <= 0) {
+      fprintf(stderr, "dsme read error: %d\n", errno);
+      return (void*)errno;
+    }
   }
 
   return 0;
@@ -84,9 +87,12 @@ static void* iphb()
 
   while (1)
   {
-    read(s2, foo, sizeof(foo));
+    if (read(s2, foo, sizeof(foo)) <= 0) {
+      fprintf(stderr, "iphb read error: %d\n", errno);
+      return 0;
+    }
   }
-  
+
   return 0;
 }
 
@@ -97,7 +103,9 @@ int main(int argc, const char **argv)
   // @todo FIXME
   pthread_t thr;
   pthread_create(&thr, NULL, dsme, 0);
+  pthread_detach(thr);
   pthread_create(&thr, NULL, iphb, 0);
+  pthread_detach(thr);
 
   int watchdog = -1;
   int twl4030_wdt = -1;
