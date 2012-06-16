@@ -82,8 +82,14 @@ on boot
     chmod 0660 /sys/devices/omapdss/display0/backlight/display0/brightness
     chown system system /sys/devices/omapdss/display0/backlight/display0/brightness
     chmod 0660 /sys/class/graphics/fb0/blank
+# colour profile
+    chown system system /sys/devices/platform/omapdss/manager0/cpr_coef
+    chown system system /sys/devices/platform/omapdss/manager0/cpr_enable
 
+# powersaving
     chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-004b/disable_ts
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
 
     chown system system /data/app
     chmod 0771 /data/app
@@ -129,7 +135,7 @@ service dsme /system/bin/fakedsme
     class main
     disabled
 
-service bme /system/bin/sh /system/etc/bme.sh
+service bme /system/bin/logwrapper /system/bin/sh /system/etc/bme.sh
     class main
     disabled
     onrestart restart dsme
