@@ -32,8 +32,8 @@
 
 #include <hardware/lights.h>
 
-/******************************************************************************/
-#define LP5521_CHANNELS 6
+// number of keyboard leds on Nokia n950
+#define NUM_KEYBOARD_LEDS 6
 
 static pthread_once_t g_init = PTHREAD_ONCE_INIT;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -44,45 +44,31 @@ static struct light_state_t g_notification = {
 static struct light_state_t g_battery = {
 	.color = 0,
 };
+
 static int g_attention = 0;
 
 
-char LCD_FILE[]
-        = "/sys/devices/omapdss/display0/backlight/display0/brightness";
+static const char LCD_FILE[]
+= "/sys/devices/omapdss/display0/backlight/display0/brightness";
 
-char const*const LCD_BLANK_FILE
-        = "/sys/devices/platform/omapfb/graphics/fb0/blank";
+static const char LCD_BLANK_FILE[]
+= "/sys/devices/platform/omapfb/graphics/fb0/blank";
 
-char const*const KEYBOARD_FILE
-        = "/sys/class/leds/lp5523:channel%d/brightness";
+static const char KEYBOARD_FILE_TEMPLATE[]
+= "/sys/class/leds/lp5523:channel%d/brightness";
 
-char const*const RED_LED_FILE
-        = "/sys/class/leds/lp5523:r/brightness";
+static const char LED_BRIGHTNESS_FILE[]
+= "/sys/devices/platform/i2c_omap.2/i2c-2/2-0032/leds/lp5521:channel0/brightness";
 
-char const*const GREEN_LED_FILE
-        = "/sys/class/leds/lp5523:g/brightness";
+static const char ENGINE1_MODE_FILE[]
+= "/sys/devices/platform/i2c_omap.2/i2c-2/2-0032/engine1_mode";
 
-char const*const BLUE_LED_FILE
-        = "/sys/class/leds/lp5523:b/brightness";
-
-char const*const ENGINE1_MODE_FILE
-        = "/sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode";
-
-char const*const ENGINE1_LEDS_FILE
-        = "/sys/class/i2c-adapter/i2c-2/2-0032/engine1_leds";
-
-char const*const ENGINE1_LOAD_FILE
-        = "/sys/class/i2c-adapter/i2c-2/2-0032/engine1_load";
+static const char ENGINE1_LOAD_FILE[]
+= "/sys/devices/platform/i2c_omap.2/i2c-2/2-0032/engine1_load";
 
 /**
  * device methods
  */
-
-void init_globals(void)
-{
-    // init the mutex
-    pthread_mutex_init(&g_lock, NULL);
-}
 
 static int
 write_string(char const *file, const char const *value)
@@ -128,45 +114,28 @@ rgb_to_brightness(struct light_state_t const* state)
 
 static int
 set_light_backlight(struct light_device_t* dev,
-        struct light_state_t const* state)
+                    struct light_state_t const* state)
 {
 	static int lcdOff = 0;
     int err = 0;
     int brightness = rgb_to_brightness(state);
     pthread_mutex_lock(&g_lock);
     err = write_int(LCD_FILE, brightness);
-
-    // REVISIT: do we need this?
-#if 0
-	if (!brightness) {
-		if (!lcdOff) {
-			err = write_int(LCD_BLANK_FILE, 1);
-			lcdOff = 1;
-		}
-	}
-	else {
-		if (lcdOff) {
-			err = write_int(LCD_BLANK_FILE, 0);
-			lcdOff = 0;
-		}
-	}
-#endif
-
     pthread_mutex_unlock(&g_lock);
     return err;
 }
 
 static int
 set_light_keyboard(struct light_device_t* dev,
-        struct light_state_t const* state)
+                   struct light_state_t const* state)
 {
     int err = 0;
     int i = 0;
     char file[100];
     int brightness = rgb_to_brightness(state);
     pthread_mutex_lock(&g_lock);
-    for(i = 0; i < LP5521_CHANNELS; i++) {
-        snprintf(file,sizeof(file),KEYBOARD_FILE,i);
+    for(i = 0; i < NUM_KEYBOARD_LEDS; i++) {
+        snprintf(file, sizeof(file), KEYBOARD_FILE_TEMPLATE, i);
         err = write_int(file, brightness);
         if (err != 0)
             break;
@@ -178,69 +147,51 @@ set_light_keyboard(struct light_device_t* dev,
 
 /*
 // led
-cd /sys/class/i2c-adapter/i2c-2/2-0032
+cd /sys/devices/platform/i2c_omap.2/i2c-2/2-0032
 echo load > engine1_mode
-echo 000011100 > engine1_leds
 echo 9d804000427f0d7f7f007f0042000000 > engine1_load
+# - or -
+echo 9d8040ff7f0040007f000000 > engine1_load
 echo run > engine1_mode 
 */
 static int
 set_led_state_locked(struct light_device_t* dev,
-        struct light_state_t const* state)
+                     struct light_state_t const* state)
 {
     int len;
-    int alpha, red, green, blue;
     int onMS, offMS;
-    unsigned int colorRGB;
-	char ledsPattern[12], enginePattern[35];
+	char enginePattern[35];
 
     switch (state->flashMode) {
-        case LIGHT_FLASH_TIMED:
-            onMS = state->flashOnMS;
-            offMS = state->flashOffMS;
-            break;
-        case LIGHT_FLASH_NONE:
-        default:
-            onMS = 0;
-            offMS = 0;
-            break;
+      case LIGHT_FLASH_TIMED:
+          onMS = state->flashOnMS;
+          offMS = state->flashOffMS;
+          break;
+      case LIGHT_FLASH_NONE:
+      default:
+          onMS = 0;
+          offMS = 0;
+          break;
     }
 
-    colorRGB = state->color;
+    LOGV("set_led_state color=%08X, onMS=%d, offMS=%d\n",
+         state->color, onMS, offMS);
 
-#if 1
-    LOGD("set_led_state colorRGB=%08X, onMS=%d, offMS=%d\n",
-            colorRGB, onMS, offMS);
-#endif
+    if (onMS > 0 && offMS > 0) {
+        write_int(LED_BRIGHTNESS_FILE, 0);
 
-	red = (colorRGB >> 16) & 0xFF;
-	green = (colorRGB >> 8) & 0xFF;
-	blue = colorRGB & 0xFF;
+        snprintf(enginePattern, sizeof(enginePattern),
+                 "9d8040ff%02x004000%02x000000\n", 0x42+onMS/67, 0x42+offMS/67);
+        //snprintf(enginePattern, sizeof(enginePattern), "9d8040ff7f0040007f000000\n"); // TODO: remove this
 
-	if (onMS > 0 && offMS > 0) {
-		write_int(RED_LED_FILE, 0);
-		write_int(GREEN_LED_FILE, 0);
-		write_int(BLUE_LED_FILE, 0);
+        LOGD("enginePattern: %s", enginePattern);
 
-		snprintf(ledsPattern, sizeof(ledsPattern), "0000%d%d%d00\n",
-			blue > 0 ? 1 : 0, green > 0 ? 1 : 0, red > 0 ? 1 : 0);
-		snprintf(enginePattern, sizeof(enginePattern), "9d8040ff%02x004000%02x000000\n", 0x42+onMS/67, 0x42+offMS/67);
-		//snprintf(enginePattern, sizeof(enginePattern), "9d8040ff7f0040007f000000\n");
-
-#if 1
-		LOGD("ledsPattern: %s", ledsPattern);
-		LOGD("enginePattern: %s", enginePattern);
-#endif
-
-		write_string(ENGINE1_MODE_FILE, "load\n");
-		write_string(ENGINE1_LEDS_FILE, ledsPattern);
-		write_string(ENGINE1_LOAD_FILE, enginePattern);
-		write_string(ENGINE1_MODE_FILE, "run\n");
+        write_string(ENGINE1_MODE_FILE, "load\n");
+        write_string(ENGINE1_LOAD_FILE, enginePattern);
+        write_string(ENGINE1_MODE_FILE, "run\n");
     } else {
 		write_string(ENGINE1_MODE_FILE, "disabled\n");
-		write_int(RED_LED_FILE, red);
-		write_int(GREEN_LED_FILE, green);
-		write_int(BLUE_LED_FILE, blue);
+		write_int(LED_BRIGHTNESS_FILE, rgb_to_brightness(state));
     }
 
     return 0;
@@ -258,7 +209,7 @@ handle_speaker_battery_locked(struct light_device_t* dev)
 
 static int
 set_light_battery(struct light_device_t* dev,
-        struct light_state_t const* state)
+                  struct light_state_t const* state)
 {
     pthread_mutex_lock(&g_lock);
     g_battery = *state;
@@ -270,7 +221,7 @@ set_light_battery(struct light_device_t* dev,
 
 static int
 set_light_notifications(struct light_device_t* dev,
-        struct light_state_t const* state)
+                        struct light_state_t const* state)
 {
     pthread_mutex_lock(&g_lock);
     g_notification = *state;
@@ -282,7 +233,7 @@ set_light_notifications(struct light_device_t* dev,
 
 static int
 set_light_attention(struct light_device_t* dev,
-        struct light_state_t const* state)
+                    struct light_state_t const* state)
 {
 #if 0
     pthread_mutex_lock(&g_lock);
@@ -334,13 +285,13 @@ static int open_lights(const struct hw_module_t* module, char const* name,
 {
     LOGD("open_lights %s", name);
     int (*set_light)(struct light_device_t* dev,
-            struct light_state_t const* state);
+                     struct light_state_t const* state);
     if (0 == strcmp(LIGHT_ID_BACKLIGHT, name)) {
         set_light = set_light_backlight;
     } else if (0 == strcmp(LIGHT_ID_KEYBOARD, name) && isKeyboardPresent()) {
         set_light = set_light_keyboard;
     }
-#if 0
+#if 1
     else if (0 == strcmp(LIGHT_ID_BATTERY, name)) {
         set_light = set_light_battery;
     }
@@ -354,8 +305,6 @@ static int open_lights(const struct hw_module_t* module, char const* name,
     else {
         return -EINVAL;
     }
-
-    pthread_once(&g_init, init_globals);
 
     struct light_device_t *dev = malloc(sizeof(struct light_device_t));
     memset(dev, 0, sizeof(*dev));
