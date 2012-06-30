@@ -7,4 +7,4 @@ sleep 2
 
 rm ${HARMATTAN_ROOT}/tmp/.bme* 2> /dev/null
 
-chroot ${HARMATTAN_ROOT} /usr/sbin/bme_RX-71 -l stdout -v 5 --nodsme -c /usr/lib/hwi/hw/rx71.so
+exec chroot ${HARMATTAN_ROOT} /usr/sbin/bme_RX-71 -l stdout -v 5 --nodsme -c /usr/lib/hwi/hw/rx71.so
