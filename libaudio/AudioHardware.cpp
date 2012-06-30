@@ -153,9 +153,9 @@ void AudioHardware::setAudioRouting(int device)
             break;
 
         case AudioSystem::DEVICE_OUT_EARPIECE:
-            setMixerCtl(0, "DAC2 Digital Fine Playback Volume", "98");
-            setMixerCtl(0, "DAC2 Digital Coarse Playback Volume", "50");
-            setMixerCtl(0, "DAC2 Analog Playback Volume", "92");
+            setMixerCtl(0, "DAC2 Digital Fine Playback Volume", "61");
+            setMixerCtl(0, "DAC2 Digital Coarse Playback Volume", "1");
+            setMixerCtl(0, "DAC2 Analog Playback Volume", "16");
             setMixerCtl(0, "DAC2 Analog Playback Switch", "1");
 
             setMixerCtl(0, "Digimic LR Swap", "Swapped");
@@ -166,9 +166,9 @@ void AudioHardware::setAudioRouting(int device)
             setMixerCtl(0, "PreDriv Playback Volume", "0");
             setMixerCtl(0, "PredriveR Mixer AudioL2", "0");
 
-            setMixerCtl(0, "Earpiece Playback Volume", "67");
+            setMixerCtl(0, "Earpiece Playback Volume", "2");
             setMixerCtl(0, "Earpiece Mixer AudioL2", "1");
-            setMixerCtl(0, "Right Digital Loopback Volume", "100");
+            setMixerCtl(0, "Right Digital Loopback Volume", "7");
 
             setMixerCtl(1, "Line to Line Out Volume", "0");
             setMixerCtl(1, "DAC Digital Playback Switch", "1");
@@ -662,7 +662,7 @@ void AudioHardware::setVoiceVolume_l(float volume)
             case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
             case AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
                 LOGD("### bluetooth call volume");
-                //type = SOUND_TYPE_BTVOICE;
+                type = SOUND_TYPE_BTVOICE;
                 break;
 
             case AudioSystem::DEVICE_OUT_WIRED_HEADSET:
@@ -845,9 +845,15 @@ struct pcm *AudioHardware::openPcmOut_l()
         };
 
 
+        int device = 0;
+        if (type == SOUND_TYPE_HEADSET)
+            device = 1;
+        else if (type == SOUND_TYPE_BTVOICE)
+            device = 2;
+
         TRACE_DRIVER_IN(DRV_PCM_OPEN)
-        LOGD("reopening");
-        mPcm = pcm_open(type == SOUND_TYPE_HEADSET ? 1 : 0, 0, flags, &config);
+        LOGD("reopening %d", device);
+        mPcm = pcm_open(device, 0, flags, &config);
         TRACE_DRIVER_OUT
         if (!pcm_is_ready(mPcm)) {
             LOGE("openPcmOut_l() cannot open pcm_out driver: %s\n", pcm_get_error(mPcm));
@@ -1441,9 +1447,9 @@ status_t AudioHardware::AudioStreamInALSA::set(
 
     mHardware = hw;
 
-    LOGV("AudioStreamInALSA::set(%d, %d, %u)", *pFormat, *pChannels, *pRate);
+    LOGD("AudioStreamInALSA::set(%d, %d/%d, %u)", *pFormat, *pChannels, mChannelCount, *pRate);
 
-    mBufferSize = getBufferSize(*pRate, AudioSystem::popCount(*pChannels));
+    mBufferSize = getBufferSize(*pRate, 1);
     mDevices = devices;
     mChannels = *pChannels;
     mChannelCount = AudioSystem::popCount(mChannels);
@@ -1635,8 +1641,14 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
     // Using of half samplerate value for downsampling is easiest way to get mono from stereo.
     // Also: While SIP-call is active, we use regular samplerates, dunno why.
     int rate = AUDIO_HW_IN_SAMPLERATE;
-    if (mChannelCount == 2  || mHardware->mode() == AudioSystem::MODE_IN_COMMUNICATION)
+    //int period_count = AUDIO_HW_IN_PERIOD_CNT;
+    //if (mChannelCount == 1  && mHardware->mode() != AudioSystem::MODE_IN_COMMUNICATION && mSampleRate == 8000)
+    if (mChannelCount != 2  || mHardware->mode() == AudioSystem::MODE_IN_COMMUNICATION)
+    {
+        LOGD("Applying AUDIO_HW_IN_SAMPLERATE/2 hack");
         rate = AUDIO_HW_IN_SAMPLERATE/2;
+        //period_count = 4;
+    }
 
     struct pcm_config config = {
         channels : 2,
@@ -1646,8 +1658,8 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
         format : PCM_FORMAT_S16_LE,
     };
 
-    LOGD("open pcm_in driver: mMode=%d, mChannelCount=%d, rate=%d, period_sz=%d, period_count=%d",
-         mHardware->mode(), mChannelCount, config.rate, config.period_size, config.period_count);
+    LOGD("open pcm_in driver: mMode=%d, mChannelCount=%d, rate=%d/%d, period_sz=%d, period_count=%d",
+         mHardware->mode(), mChannelCount, config.rate, mSampleRate, config.period_size, config.period_count);
     TRACE_DRIVER_IN(DRV_PCM_OPEN)
     mPcm = pcm_open(0, 0, flags, &config);
     TRACE_DRIVER_OUT
