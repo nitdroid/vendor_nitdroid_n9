@@ -1454,8 +1454,13 @@ status_t AudioHardware::AudioStreamInALSA::set(
     mChannels = *pChannels;
     mChannelCount = AudioSystem::popCount(mChannels);
     mSampleRate = rate;
-    if (mSampleRate != AUDIO_HW_OUT_SAMPLERATE) {
-        mDownSampler = new AudioHardware::DownSampler(mSampleRate,
+    LOGD("mSampleRate=%d, mChannelCount=%d", mSampleRate, mChannelCount);
+
+    // perform downsampling if expected sample rate is different from AUDIO_HW_IN_SAMPLERATE
+    // or application uses 1 channel (i.e mono) audio recording
+    if (mSampleRate != AUDIO_HW_IN_SAMPLERATE || mChannelCount != 2) {
+        LOGD("DownSampler(%d, %d, %d)", mSampleRate / (3-mChannelCount), mChannelCount, AUDIO_HW_IN_PERIOD_SZ);
+        mDownSampler = new AudioHardware::DownSampler(mSampleRate / (3-mChannelCount),
                                                   *pChannels,
                                                   AUDIO_HW_IN_PERIOD_SZ,
                                                   this);
@@ -1636,23 +1641,9 @@ status_t AudioHardware::AudioStreamInALSA::open_l()
 {
     unsigned flags = PCM_IN;
 
-    // XXX: anal hardcore double penetration. Dirtiest thing I ever wrote.
-    // @TODO REMOVE THIS CRAP
-    // Using of half samplerate value for downsampling is easiest way to get mono from stereo.
-    // Also: While SIP-call is active, we use regular samplerates, dunno why.
-    int rate = AUDIO_HW_IN_SAMPLERATE;
-    //int period_count = AUDIO_HW_IN_PERIOD_CNT;
-    //if (mChannelCount == 1  && mHardware->mode() != AudioSystem::MODE_IN_COMMUNICATION && mSampleRate == 8000)
-    if (mChannelCount != 2  || mHardware->mode() == AudioSystem::MODE_IN_COMMUNICATION)
-    {
-        LOGD("Applying AUDIO_HW_IN_SAMPLERATE/2 hack");
-        rate = AUDIO_HW_IN_SAMPLERATE/2;
-        //period_count = 4;
-    }
-
     struct pcm_config config = {
         channels : 2,
-        rate : rate,
+        rate : AUDIO_HW_IN_SAMPLERATE,
         period_size : AUDIO_HW_IN_PERIOD_SZ,
         period_count : AUDIO_HW_IN_PERIOD_CNT,
         format : PCM_FORMAT_S16_LE,
@@ -1845,7 +1836,7 @@ size_t AudioHardware::AudioStreamInALSA::getBufferSize(uint32_t sampleRate, int 
         break;
     case 16000:
     case 22050:
-        ratio = 2;
+        ratio = 1;
         break;
     case 44100:
     default:
