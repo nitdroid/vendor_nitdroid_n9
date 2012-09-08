@@ -20,7 +20,7 @@
 #include <linux/rtc.h>
 #include <linux/ioctl.h>
 
-#define LOG_TAG "wdpinger"
+#define ALOG_TAG "wdpinger"
 #include <utils/Log.h>
 
 #include <sys/socket.h>
@@ -139,15 +139,15 @@ int main(int argc, const char **argv)
       /* The select will wait until an RTC interrupt happens. */
       int retval = select(fd+1, &readfds, NULL, NULL, &tv);
       if (retval == -1) {
-        LOGE("select");
+        ALOGE("select");
       }
       /* This read won't block unlike the select-less case above. */
       if (FD_ISSET(fd, &readfds)) {
       retval = read(fd, &data, sizeof(unsigned long));
       if (retval == -1) {
-        LOGE("read");
+        ALOGE("read");
       }
-      LOGD(" %lu",data);
+      ALOGD(" %lu",data);
       }
     }
   }
