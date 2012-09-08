@@ -86,10 +86,15 @@ on boot
     chown system system /sys/devices/platform/omapdss/manager0/cpr_coef
     chown system system /sys/devices/platform/omapdss/manager0/cpr_enable
 
+# tearing hack
+    chown system /sys/devices/omapdss/display0/tear_elim
+    write 0 /sys/devices/omapdss/display0/tear_elim
+
 # powersaving
     chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-004b/disable_ts
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+    chown system system /sys/power/pm_optimizer_rotation
 
     chown system system /data/app
     chmod 0771 /data/app
