@@ -85,7 +85,7 @@ write_string(char const *file, const char const *value)
 		return amt == -1 ? -errno : 0;
 	}
 	else {
-		LOGE("%s failed to open %s\n", __func__, file);
+		ALOGE("%s failed to open %s\n", __func__, file);
 		return -errno;
 	}
 }
@@ -174,7 +174,7 @@ set_led_state_locked(struct light_device_t* dev,
           break;
     }
 
-    LOGV("set_led_state color=%08X, onMS=%d, offMS=%d\n",
+    ALOGV("set_led_state color=%08X, onMS=%d, offMS=%d\n",
          state->color, onMS, offMS);
 
     if (onMS > 0 && offMS > 0) {
@@ -184,7 +184,7 @@ set_led_state_locked(struct light_device_t* dev,
                  "9d8040ff%02x004000%02x000000\n", 0x42+onMS/67, 0x42+offMS/67);
         //snprintf(enginePattern, sizeof(enginePattern), "9d8040ff7f0040007f000000\n"); // TODO: remove this
 
-        LOGD("enginePattern: %s", enginePattern);
+        ALOGD("enginePattern: %s", enginePattern);
 
         write_string(ENGINE1_MODE_FILE, "load\n");
         write_string(ENGINE1_LOAD_FILE, enginePattern);
@@ -213,7 +213,7 @@ set_light_battery(struct light_device_t* dev,
 {
     pthread_mutex_lock(&g_lock);
     g_battery = *state;
-	LOGD("set_light_battery color=0x%08x", state->color);
+	ALOGD("set_light_battery color=0x%08x", state->color);
     handle_speaker_battery_locked(dev);
     pthread_mutex_unlock(&g_lock);
     return 0;
@@ -225,7 +225,7 @@ set_light_notifications(struct light_device_t* dev,
 {
     pthread_mutex_lock(&g_lock);
     g_notification = *state;
-    LOGD("set_light_notifications color=0x%08x", state->color);
+    ALOGD("set_light_notifications color=0x%08x", state->color);
     handle_speaker_battery_locked(dev);
     pthread_mutex_unlock(&g_lock);
     return 0;
@@ -238,7 +238,7 @@ set_light_attention(struct light_device_t* dev,
 #if 0
     pthread_mutex_lock(&g_lock);
     g_notification = *state;
-    LOGD("set_light_attention color=0x%08x", state->color);
+    ALOGD("set_light_attention color=0x%08x", state->color);
     if (state->flashMode == LIGHT_FLASH_HARDWARE) {
         g_attention = state->flashOnMS;
     } else if (state->flashMode == LIGHT_FLASH_NONE) {
@@ -255,7 +255,7 @@ static int isKeyboardPresent()
     char propValue[PROPERTY_VALUE_MAX];
     if ( property_get("ro.hardware", propValue, NULL) &&
          strcmp(propValue, "nokiarm-696board") == 0 ) {
-        LOGW("Keyboard isn't present on %s", propValue);
+        ALOGW("Keyboard isn't present on %s", propValue);
         return 0;
     }
 
@@ -283,7 +283,7 @@ close_lights(struct light_device_t *dev)
 static int open_lights(const struct hw_module_t* module, char const* name,
                        struct hw_device_t** device)
 {
-    LOGD("open_lights %s", name);
+    ALOGD("open_lights %s", name);
     int (*set_light)(struct light_device_t* dev,
                      struct light_state_t const* state);
     if (0 == strcmp(LIGHT_ID_BACKLIGHT, name)) {
@@ -327,7 +327,7 @@ static struct hw_module_methods_t lights_module_methods = {
 /*
  * The lights Module
  */
-const struct hw_module_t HAL_MODULE_INFO_SYM = {
+struct hw_module_t HAL_MODULE_INFO_SYM = {
     .tag = HARDWARE_MODULE_TAG,
     .version_major = 1,
     .version_minor = 0,
